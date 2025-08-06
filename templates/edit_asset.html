@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">แก้ไขข้อมูลสินทรัพย์: {{ asset.name }}</h2>
+
+<form action="{{ url_for('edit_asset', asset_id=asset.id) }}" method="post">
+    <div class="card mb-4">
+        <div class="card-header">ข้อมูลหลัก</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">ชื่อสินทรัพย์/เครื่องจักร:</label>
+                    <input type="text" id="name" name="name" class="form-control" value="{{ asset.name }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="location" class="form-label">ตำแหน่งที่ตั้ง:</label>
+                    <input type="text" id="location" name="location" class="form-control" value="{{ asset.location }}" required>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">กำหนดการบำรุงรักษา (PM)</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="next_pm_date" class="form-label">วันที่ PM ครั้งถัดไป:</label>
+                    <input type="date" id="next_pm_date" name="next_pm_date" class="form-control" value="{{ asset.next_pm_date or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="pm_frequency_days" class="form-label">ความถี่ในการทำ PM (ทุกๆ กี่วัน):</label>
+                    <input type="number" id="pm_frequency_days" name="pm_frequency_days" class="form-control" placeholder="เช่น 90" value="{{ asset.pm_frequency_days or '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">ข้อมูลเพิ่มเติม (Custom Fields)</div>
+        <div class="card-body">
+            <div id="custom-fields-container">
+                {% for key, value in asset.custom_data.items() %}
+                <div class="row g-3 mb-2 align-items-center">
+                    <div class="col-md-5">
+                        <input type="text" name="custom_key" class="form-control" placeholder="ชื่อฟิลด์" value="{{ key }}">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="custom_value" class="form-control" placeholder="ค่าของฟิลด์" value="{{ value }}">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" onclick="this.parentElement.parentElement.remove()" class="btn btn-outline-danger w-100">ลบ</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" onclick="addCustomField()" class="btn btn-outline-primary mt-2">+ เพิ่มฟิลด์</button>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">บันทึกการเปลี่ยนแปลง</button>
+        <a href="{{ url_for('asset_detail', asset_id=asset.id) }}" class="btn btn-secondary btn-lg">ยกเลิก</a>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function addCustomField() {
+        const container = document.getElementById('custom-fields-container');
+        const div = document.createElement('div');
+        div.className = 'row g-3 mb-2 align-items-center';
+        div.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" name="custom_key" class="form-control" placeholder="ชื่อฟิลด์ (เช่น หมายเลขเครื่อง)">
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="custom_value" class="form-control" placeholder="ค่าของฟิลด์ (เช่น SN-12345)">
+            </div>
+            <div class="col-md-1">
+                <button type="button" onclick="this.parentElement.parentElement.remove()" class="btn btn-outline-danger w-100">ลบ</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+</script>
+{% endblock %}

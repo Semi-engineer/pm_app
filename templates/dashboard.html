@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">ปฏิทินแผนงาน (PM Schedule)</h2>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div id='calendar'></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          // ใช้ Theme ของ Bootstrap 5
+          themeSystem: 'bootstrap5',
+          
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+          },
+          
+          // ดึงข้อมูลจาก API ของเรา
+          events: '/api/pm_events',
+          
+          locale: 'th',
+          
+          // เปลี่ยนสี Event ที่ค้างอยู่ให้เป็นสีแดง
+          eventDidMount: function(info) {
+            let eventDate = new Date(info.event.start);
+            let today = new Date();
+            // เซ็ตเวลาให้เป็น 0 เพื่อเปรียบเทียบเฉพาะวันที่
+            today.setHours(0,0,0,0);
+
+            if (eventDate < today) {
+              info.el.style.backgroundColor = '#dc3545'; // สีแดงของ Bootstrap (danger)
+              info.el.style.borderColor = '#dc3545';
+            }
+          }
+        });
+
+        calendar.render();
+      });
+    </script>
+{% endblock %}

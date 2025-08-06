@@ -1,0 +1,30 @@
+# --- Virtual Environment ---
+# ไม่นำโฟลเดอร์ virtual environment เข้า Git
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# --- Flask & Database specific files ---
+# โฟลเดอร์ instance ของ Flask ใช้เก็บไฟล์ที่ไม่ควรอยู่ใน Git เช่น DB, config
+instance/
+# ไม่นำไฟล์ฐานข้อมูล SQLite โดยตรง
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# --- Python specific files ---
+# โฟลเดอร์ Byte-code และไฟล์ที่ถูกคอมไพล์
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- OS-specific files ---
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

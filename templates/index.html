@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>เพิ่มสินทรัพย์ใหม่</h2>
+    <form action="{{ url_for('add_asset') }}" method="post" class="row g-3">
+        <div class="col-md-6">
+            <label for="name" class="form-label">ชื่อสินทรัพย์/เครื่องจักร:</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+            <label for="location" class="form-label">ตำแหน่งที่ตั้ง:</label>
+            <input type="text" id="location" name="location" class="form-control" required>
+        </div>
+
+        <div class="col-12">
+            <hr class="my-4">
+            <h3>ข้อมูลเพิ่มเติม (Custom Fields)</h3>
+            <div id="custom-fields-container"></div>
+            <button type="button" onclick="addCustomField()" class="btn btn-outline-primary btn-sm">+ เพิ่มฟิลด์</button>
+        </div>
+
+        <div class="col-12">
+            <hr class="my-4">
+            <button type="submit" class="btn btn-primary">บันทึกสินทรัพย์</button>
+        </div>
+    </form>
+
+    <h2 class="mt-5">รายการสินทรัพย์ทั้งหมด</h2>
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ชื่อสินทรัพย์</th>
+                <th>ตำแหน่ง</th>
+                <th>การจัดการ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in assets %}
+            <tr>
+                <td>{{ asset['name'] }}</td>
+                <td>{{ asset['location'] }}</td>
+                <td>
+                    <a href="{{ url_for('edit_asset', asset_id=asset['id']) }}" class="btn btn-sm btn-warning">แก้ไข</a>
+                    <a href="{{ url_for('asset_detail', asset_id=asset['id']) }}" class="btn btn-sm btn-info">ดูประวัติ</a>
+                    <form action="{{ url_for('delete_asset', asset_id=asset['id']) }}" method="post" onsubmit="return confirm('คุณแน่ใจหรือไม่?');" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger">ลบ</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    function addCustomField() {
+        const container = document.getElementById('custom-fields-container');
+        const div = document.createElement('div');
+        div.className = 'row mb-3 align-items-center';
+        div.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" name="custom_key" class="form-control" placeholder="ชื่อฟิลด์">
+            </div>
+            <div class="col-md-5">
+                <input type="text" name="custom_value" class="form-control" placeholder="ค่าของฟิลด์">
+            </div>
+            <div class="col-md-2">
+                <button type="button" onclick="this.parentElement.parentElement.remove()" class="btn btn-outline-danger btn-sm">ลบ</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+</script>
+{% endblock %}
