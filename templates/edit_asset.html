@@ -20,22 +20,33 @@
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header">กำหนดการบำรุงรักษา (PM)</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="next_pm_date" class="form-label">วันที่ PM ครั้งถัดไป:</label>
-                    <input type="date" id="next_pm_date" name="next_pm_date" class="form-control" value="{{ asset.next_pm_date or '' }}">
-                </div>
-                <div class="col-md-6">
-                    <label for="pm_frequency_days" class="form-label">ความถี่ในการทำ PM (ทุกๆ กี่วัน):</label>
-                    <input type="number" id="pm_frequency_days" name="pm_frequency_days" class="form-control" placeholder="เช่น 90" value="{{ asset.pm_frequency_days or '' }}">
-                </div>
+<div class="card mb-4">
+    <div class="card-header">กำหนดการบำรุงรักษา (PM) และผู้รับผิดชอบ</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="next_pm_date" class="form-label">วันที่ PM ครั้งถัดไป:</label>
+                <input type="date" id="next_pm_date" name="next_pm_date" class="form-control" value="{{ asset.next_pm_date or '' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="pm_frequency_days" class="form-label">ความถี่ในการทำ PM (ทุกๆ กี่วัน):</label>
+                <input type="number" id="pm_frequency_days" name="pm_frequency_days" class="form-control" placeholder="เช่น 90" value="{{ asset.pm_frequency_days or '' }}">
+            </div>
+            
+            <div class="col-md-4">
+                <label for="technician_id" class="form-label">ผู้รับผิดชอบหลัก:</label>
+                <select id="technician_id" name="technician_id" class="form-select">
+                    <option value="">-- ไม่ระบุ --</option>
+                    {% for tech in technicians %}
+                        <option value="{{ tech.id }}" {% if asset and asset.technician_id == tech.id %}selected{% endif %}>
+                            {{ tech.username }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
     </div>
-
+</div>
     <div class="card mb-4">
         <div class="card-header">ข้อมูลเพิ่มเติม (Custom Fields)</div>
         <div class="card-body">

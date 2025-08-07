@@ -7,7 +7,8 @@ import io
 import csv
 from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, session, Response
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from collections import Counter
 
 app = Flask(__name__)
 app.secret_key = 'a-super-secret-key-that-you-should-change'
@@ -125,10 +126,25 @@ def logout():
 @login_required
 def index():
     db = get_db()
-    assets = db.execute('SELECT * FROM assets ORDER BY id DESC').fetchall()
+    
+    search_query = request.args.get('q', '')
+
+    base_sql = "SELECT * FROM assets"
+    params = []
+
+    if search_query:
+        search_term = f"%{search_query}%"
+        base_sql += " WHERE name LIKE ? OR location LIKE ? OR custom_data LIKE ?"
+        params.extend([search_term, search_term, search_term])
+    
+    base_sql += " ORDER BY id DESC"
+
+    assets = db.execute(base_sql, params).fetchall()
+
     pm_due_assets = db.execute('SELECT * FROM assets WHERE next_pm_date IS NOT NULL AND next_pm_date != "" AND date(next_pm_date) <= date("now", "+7 days") ORDER BY next_pm_date ASC').fetchall()
     technicians = get_all_technicians()
-    return render_template('index.html', assets=assets, pm_due_assets=pm_due_assets, technicians=technicians)
+    
+    return render_template('index.html', assets=assets, pm_due_assets=pm_due_assets, technicians=technicians, search_query=search_query)
 
 @app.route('/add_asset', methods=['POST'])
 @login_required
@@ -244,13 +260,39 @@ def pm_events_api():
     events = [{'title': asset['name'], 'start': asset['next_pm_date'], 'url': url_for('asset_detail', asset_id=asset['id'])} for asset in assets_with_pm]
     return jsonify(events)
 
-# --- ฟังก์ชันใหม่สำหรับ Export CSV ---
+@app.route('/reports')
+@login_required
+def reports():
+    db = get_db()
+
+    costs_by_month = db.execute("""
+        SELECT strftime('%Y-%m', date) as month, SUM(cost) as total_cost
+        FROM maintenance_history WHERE cost IS NOT NULL AND cost > 0
+        GROUP BY month ORDER BY month;
+    """).fetchall()
+
+    cost_data = {
+        'labels': [datetime.strptime(row['month'], '%Y-%m').strftime('%b %Y') for row in costs_by_month],
+        'data': [row['total_cost'] or 0 for row in costs_by_month]
+    }
+
+    all_descriptions = db.execute("SELECT description FROM maintenance_history").fetchall()
+    job_type_counts = Counter(
+        'งาน PM' if 'PM' in row['description'] or 'บำรุงรักษาเชิงป้องกัน' in row['description'] 
+        else 'งานซ่อมทั่วไป (CM)'
+        for row in all_descriptions
+    )
+
+    job_type_data = {
+        'labels': list(job_type_counts.keys()),
+        'data': list(job_type_counts.values())
+    }
+
+    return render_template('reports.html', cost_data=cost_data, job_type_data=job_type_data)
+
 @app.route('/export_asset_history/<int:asset_id>')
 @login_required
 def export_asset_history(asset_id):
-    """
-    ส่งออกประวัติการซ่อมบำรุงของสินทรัพย์ที่ระบุเป็นไฟล์ CSV
-    """
     db = get_db()
     
     asset = db.execute('SELECT name FROM assets WHERE id = ?', (asset_id,)).fetchone()
@@ -274,7 +316,6 @@ def export_asset_history(asset_id):
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment;filename=history_{asset['name'].replace(' ', '_')}_{asset_id}.csv"}
     )
-# ------------------------------------
 
 if __name__ == '__main__':
     app.run(debug=True)
