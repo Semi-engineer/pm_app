@@ -22,6 +22,7 @@ CREATE TABLE assets (
     next_pm_date TEXT,
     pm_frequency_days INTEGER,
     technician_id INTEGER,
+    asset_image_filename TEXT,
     FOREIGN KEY(technician_id) REFERENCES users(id)
 );
 

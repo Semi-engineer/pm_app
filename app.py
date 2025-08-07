@@ -5,19 +5,35 @@ import functools
 import click
 import io
 import csv
-from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, session, Response
+from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, session, Response, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 from datetime import date, timedelta, datetime
 from collections import Counter
 
+# --- App Configuration ---
 app = Flask(__name__)
 app.secret_key = 'a-super-secret-key-that-you-should-change'
+
+# Configuration for File Uploads
+UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 DATABASE = os.path.join(app.instance_path, 'maintenance.db')
 
+# --- Initial Setup ---
 try:
     os.makedirs(app.instance_path)
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 except OSError:
     pass
+
+# --- Helper Functions ---
+def allowed_file(filename):
+    """Checks if the file extension is allowed."""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- Database Connection ---
 def get_db():
@@ -32,7 +48,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# --- CLI Commands ---
+# --- CLI Commands (No Changes) ---
 @app.cli.command('init-db')
 def init_db_command():
     db = sqlite3.connect(DATABASE)
@@ -57,7 +73,7 @@ def create_admin_command(username, password):
     finally:
         db.close()
 
-# --- Decorators and Helpers ---
+# --- Decorators and Helpers (No Changes) ---
 def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
@@ -75,12 +91,18 @@ def admin_required(view):
     return wrapped_view
 
 def get_all_technicians():
-    """Returns a list of all users with the 'technician' role."""
     db = get_db()
     technicians = db.execute("SELECT id, username FROM users WHERE role = 'technician' ORDER BY username").fetchall()
     return technicians
 
-# --- Authentication Routes ---
+# --- File Upload Serving Route (NEW) ---
+@app.route('/uploads/<filename>')
+@login_required
+def uploaded_file(filename):
+    """Provides access to uploaded files."""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# --- Authentication Routes (No Changes) ---
 @app.route('/register', methods=('GET', 'POST'))
 def register():
     if request.method == 'POST':
@@ -126,38 +148,42 @@ def logout():
 @login_required
 def index():
     db = get_db()
-    
     search_query = request.args.get('q', '')
-
     base_sql = "SELECT * FROM assets"
     params = []
-
     if search_query:
         search_term = f"%{search_query}%"
         base_sql += " WHERE name LIKE ? OR location LIKE ? OR custom_data LIKE ?"
         params.extend([search_term, search_term, search_term])
-    
     base_sql += " ORDER BY id DESC"
-
     assets = db.execute(base_sql, params).fetchall()
-
     pm_due_assets = db.execute('SELECT * FROM assets WHERE next_pm_date IS NOT NULL AND next_pm_date != "" AND date(next_pm_date) <= date("now", "+7 days") ORDER BY next_pm_date ASC').fetchall()
     technicians = get_all_technicians()
-    
     return render_template('index.html', assets=assets, pm_due_assets=pm_due_assets, technicians=technicians, search_query=search_query)
 
 @app.route('/add_asset', methods=['POST'])
 @login_required
 @admin_required
 def add_asset():
+    # --- Form data ---
     name, location = request.form['name'], request.form['location']
     next_pm_date = request.form.get('next_pm_date') or None
     pm_frequency_days = request.form.get('pm_frequency_days') or None
     technician_id = request.form.get('technician_id') or None
     custom_data = {k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k}
+    
+    # --- File Upload Handling ---
+    image_filename = None
+    if 'asset_image' in request.files:
+        file = request.files['asset_image']
+        if file and file.filename != '' and allowed_file(file.filename):
+            image_filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+
+    # --- Database Insert ---
     db = get_db()
-    db.execute('INSERT INTO assets (name, location, custom_data, next_pm_date, pm_frequency_days, technician_id) VALUES (?, ?, ?, ?, ?, ?)',
-               (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id))
+    db.execute('INSERT INTO assets (name, location, custom_data, next_pm_date, pm_frequency_days, technician_id, asset_image_filename) VALUES (?, ?, ?, ?, ?, ?, ?)',
+               (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, image_filename))
     db.commit()
     flash(f'สินทรัพย์ "{name}" ถูกเพิ่มเข้าระบบเรียบร้อยแล้ว', 'success')
     return redirect(url_for('index'))
@@ -168,22 +194,36 @@ def add_asset():
 def edit_asset(asset_id):
     db = get_db()
     if request.method == 'POST':
+        # --- Form Data ---
         name, location = request.form['name'], request.form['location']
         next_pm_date = request.form.get('next_pm_date') or None
         pm_frequency_days = request.form.get('pm_frequency_days') or None
         technician_id = request.form.get('technician_id') or None
         custom_data = {k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k}
-        db.execute('UPDATE assets SET name = ?, location = ?, custom_data = ?, next_pm_date = ?, pm_frequency_days = ?, technician_id = ? WHERE id = ?',
-                   (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, asset_id))
+
+        # --- File Upload Handling ---
+        image_filename = request.form.get('current_image') # Keep old image by default
+        if 'asset_image' in request.files:
+            file = request.files['asset_image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                # New file was uploaded, save it and update the filename
+                image_filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+        
+        # --- Database Update ---
+        db.execute('UPDATE assets SET name = ?, location = ?, custom_data = ?, next_pm_date = ?, pm_frequency_days = ?, technician_id = ?, asset_image_filename = ? WHERE id = ?',
+                   (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, image_filename, asset_id))
         db.commit()
         flash(f'ข้อมูลสินทรัพย์ "{name}" ถูกอัปเดตเรียบร้อยแล้ว', 'success')
         return redirect(url_for('asset_detail', asset_id=asset_id))
+    
     asset_row = db.execute('SELECT * FROM assets WHERE id = ?', (asset_id,)).fetchone()
     asset = dict(asset_row)
     asset['custom_data'] = json.loads(asset['custom_data'])
     technicians = get_all_technicians()
     return render_template('edit_asset.html', asset=asset, technicians=technicians)
 
+# ... (my-tasks route is unchanged) ...
 @app.route('/my-tasks')
 @login_required
 def my_tasks():
@@ -194,6 +234,7 @@ def my_tasks():
         ORDER BY next_pm_date ASC
     """, (session['user_id'],)).fetchall()
     return render_template('my_tasks.html', tasks=tasks)
+
 
 @app.route('/asset/<int:asset_id>')
 @login_required
@@ -212,14 +253,25 @@ def asset_detail(asset_id):
 @admin_required
 def delete_asset(asset_id):
     db = get_db()
-    asset = db.execute('SELECT name FROM assets WHERE id = ?', (asset_id,)).fetchone()
-    asset_name = asset['name'] if asset else ''
-    db.execute('DELETE FROM maintenance_history WHERE asset_id = ?', (asset_id,))
-    db.execute('DELETE FROM assets WHERE id = ?', (asset_id,))
-    db.commit()
-    flash(f'สินทรัพย์ "{asset_name}" ถูกลบออกจากระบบเรียบร้อยแล้ว', 'success')
+    asset = db.execute('SELECT name, asset_image_filename FROM assets WHERE id = ?', (asset_id,)).fetchone()
+    if asset:
+        asset_name = asset['name']
+        # --- Delete associated image file ---
+        if asset['asset_image_filename']:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], asset['asset_image_filename']))
+            except OSError as e:
+                print(f"Error deleting file {asset['asset_image_filename']}: {e}")
+        
+        db.execute('DELETE FROM maintenance_history WHERE asset_id = ?', (asset_id,))
+        db.execute('DELETE FROM assets WHERE id = ?', (asset_id,))
+        db.commit()
+        flash(f'สินทรัพย์ "{asset_name}" และข้อมูลที่เกี่ยวข้องถูกลบออกจากระบบเรียบร้อยแล้ว', 'success')
+    else:
+        flash('ไม่พบสินทรัพย์ที่ต้องการลบ', 'error')
     return redirect(url_for('index'))
 
+# ... (perform_pm and add_maintenance routes are unchanged) ...
 @app.route('/perform_pm/<int:asset_id>', methods=['POST'])
 @login_required
 def perform_pm(asset_id):
@@ -247,6 +299,8 @@ def add_maintenance(asset_id):
     flash('เพิ่มประวัติการซ่อมบำรุงเรียบร้อยแล้ว', 'success')
     return redirect(url_for('asset_detail', asset_id=asset_id))
     
+
+# --- Dashboard & API Routes (No Changes) ---
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -264,52 +318,41 @@ def pm_events_api():
 @login_required
 def reports():
     db = get_db()
-
     costs_by_month = db.execute("""
         SELECT strftime('%Y-%m', date) as month, SUM(cost) as total_cost
         FROM maintenance_history WHERE cost IS NOT NULL AND cost > 0
         GROUP BY month ORDER BY month;
     """).fetchall()
-
     cost_data = {
         'labels': [datetime.strptime(row['month'], '%Y-%m').strftime('%b %Y') for row in costs_by_month],
         'data': [row['total_cost'] or 0 for row in costs_by_month]
     }
-
     all_descriptions = db.execute("SELECT description FROM maintenance_history").fetchall()
     job_type_counts = Counter(
         'งาน PM' if 'PM' in row['description'] or 'บำรุงรักษาเชิงป้องกัน' in row['description'] 
         else 'งานซ่อมทั่วไป (CM)'
         for row in all_descriptions
     )
-
     job_type_data = {
         'labels': list(job_type_counts.keys()),
         'data': list(job_type_counts.values())
     }
-
     return render_template('reports.html', cost_data=cost_data, job_type_data=job_type_data)
 
 @app.route('/export_asset_history/<int:asset_id>')
 @login_required
 def export_asset_history(asset_id):
     db = get_db()
-    
     asset = db.execute('SELECT name FROM assets WHERE id = ?', (asset_id,)).fetchone()
     if not asset:
         flash('ไม่พบสินทรัพย์ที่ต้องการ', 'error')
         return redirect(url_for('index'))
-    
     history = db.execute('SELECT date, description, cost FROM maintenance_history WHERE asset_id = ? ORDER BY date DESC', (asset_id,)).fetchall()
-    
     output = io.StringIO()
     writer = csv.writer(output)
-    
     writer.writerow(['Date', 'Description', 'Cost'])
-    
     for item in history:
         writer.writerow([item['date'], item['description'], item['cost']])
-    
     output.seek(0)
     return Response(
         output,
@@ -317,5 +360,6 @@ def export_asset_history(asset_id):
         headers={"Content-Disposition": f"attachment;filename=history_{asset['name'].replace(' ', '_')}_{asset_id}.csv"}
     )
 
+# --- Main Execution ---
 if __name__ == '__main__':
     app.run(debug=True)

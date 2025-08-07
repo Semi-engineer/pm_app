@@ -18,20 +18,32 @@
 </div>
 {% endif %}
 
-<div class="card mb-4">
-    <div class="card-header fw-bold">ข้อมูลทั่วไปและข้อมูลเพิ่มเติม</div>
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">ชื่อ</dt><dd class="col-sm-9">{{ asset.name }}</dd>
-            <dt class="col-sm-3">ตำแหน่ง</dt><dd class="col-sm-9">{{ asset.location }}</dd>
-            {% if asset.technician_name %}<dt class="col-sm-3">ผู้รับผิดชอบ</dt><dd class="col-sm-9">{{ asset.technician_name }}</dd>{% endif %}
-            {% if asset.next_pm_date %}<dt class="col-sm-3">PM ครั้งถัดไป</dt><dd class="col-sm-9">{{ asset.next_pm_date }}</dd>{% endif %}
-            {% if asset.pm_frequency_days %}<dt class="col-sm-3">ความถี่ PM</dt><dd class="col-sm-9">ทุกๆ {{ asset.pm_frequency_days }} วัน</dd>{% endif %}
-            {% for key, value in asset.custom_data.items() %}<dt class="col-sm-3">{{ key }}</dt><dd class="col-sm-9">{{ value }}</dd>{% endfor %}
-        </dl>
+<div class="row">
+    <div class="col-md-4">
+        {% if asset.asset_image_filename %}
+            <img src="{{ url_for('uploaded_file', filename=asset.asset_image_filename) }}" alt="รูปภาพของ {{ asset.name }}" class="img-fluid rounded shadow-sm">
+        {% else %}
+            <div class="d-flex align-items-center justify-content-center bg-light rounded shadow-sm text-muted" style="height: 250px;">
+                <span>ไม่มีรูปภาพ</span>
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header fw-bold">ข้อมูลทั่วไปและข้อมูลเพิ่มเติม</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">ชื่อ</dt><dd class="col-sm-8">{{ asset.name }}</dd>
+                    <dt class="col-sm-4">ตำแหน่ง</dt><dd class="col-sm-8">{{ asset.location }}</dd>
+                    {% if asset.technician_name %}<dt class="col-sm-4">ผู้รับผิดชอบ</dt><dd class="col-sm-8">{{ asset.technician_name }}</dd>{% endif %}
+                    {% if asset.next_pm_date %}<dt class="col-sm-4">PM ครั้งถัดไป</dt><dd class="col-sm-8">{{ asset.next_pm_date }}</dd>{% endif %}
+                    {% if asset.pm_frequency_days %}<dt class="col-sm-4">ความถี่ PM</dt><dd class="col-sm-8">ทุกๆ {{ asset.pm_frequency_days }} วัน</dd>{% endif %}
+                    {% for key, value in asset.custom_data.items() %}<dt class="col-sm-4">{{ key }}</dt><dd class="col-sm-8">{{ value }}</dd>{% endfor %}
+                </dl>
+            </div>
+        </div>
     </div>
 </div>
-
 <div class="row gx-4 mt-5">
     <div class="col-md-5">
         <h4>เพิ่มประวัติการซ่อมบำรุง</h4>

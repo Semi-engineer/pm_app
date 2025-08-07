@@ -28,3 +28,6 @@ __pycache__/
 
 # Windows
 Thumbs.db
+
+# folder ที่ไม่ต้องการใน Git
+uploads/

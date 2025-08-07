@@ -22,10 +22,15 @@
     <h2 class="mt-4">เพิ่มสินทรัพย์ใหม่</h2>
     <div class="card mb-4">
         <div class="card-body">
-            <form action="{{ url_for('add_asset') }}" method="post">
+            <form action="{{ url_for('add_asset') }}" method="post" enctype="multipart/form-data">
                 <div class="row g-3">
                     <div class="col-md-6"><label for="name" class="form-label">ชื่อสินทรัพย์/เครื่องจักร:</label><input type="text" id="name" name="name" class="form-control" required></div>
                     <div class="col-md-6"><label for="location" class="form-label">ตำแหน่งที่ตั้ง:</label><input type="text" id="location" name="location" class="form-control" required></div>
+                </div>
+
+                <div class="mt-3">
+                    <label for="asset_image" class="form-label">รูปภาพสินทรัพย์:</label>
+                    <input class="form-control" type="file" id="asset_image" name="asset_image" accept="image/*">
                 </div>
                 <hr class="my-4">
                 <h5>กำหนดการบำรุงรักษา (PM) และผู้รับผิดชอบ</h5>
@@ -58,9 +63,6 @@
     <div class="card mb-4">
         <div class="card-body">
             <form action="{{ url_for('index') }}" method="get" class="row g-2 align-items-center">
-                <div class="col-auto">
-                    <label for="search" class="visually-hidden">ค้นหา</label>
-                </div>
                 <div class="col-md-5">
                     <input type="search" name="q" id="search" class="form-control" 
                            placeholder="ค้นหาจากชื่อ, ตำแหน่ง, หรือข้อมูลเพิ่มเติม..." 
