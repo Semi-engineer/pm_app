@@ -5,7 +5,7 @@ import functools
 import click
 import io
 import csv
-from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, session, Response
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import date, timedelta
 
@@ -41,17 +41,14 @@ def init_db_command():
     db.close()
     print('Initialized the database.')
 
+
 @app.cli.command('create-admin')
 @click.argument('username')
 @click.argument('password')
 def create_admin_command(username, password):
-    """Creates a new user with the admin role."""
     db = sqlite3.connect(DATABASE)
     try:
-        db.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')",
-            (username, generate_password_hash(password)),
-        )
+        db.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')", (username, generate_password_hash(password)))
         db.commit()
         print(f"Admin user '{username}' created successfully.")
     except db.IntegrityError:
@@ -79,7 +76,8 @@ def admin_required(view):
 def get_all_technicians():
     """Returns a list of all users with the 'technician' role."""
     db = get_db()
-    return db.execute("SELECT id, username FROM users WHERE role = 'technician' ORDER BY username").fetchall()
+    technicians = db.execute("SELECT id, username FROM users WHERE role = 'technician' ORDER BY username").fetchall()
+    return technicians
 
 # --- Authentication Routes ---
 @app.route('/register', methods=('GET', 'POST'))
@@ -142,7 +140,8 @@ def add_asset():
     technician_id = request.form.get('technician_id') or None
     custom_data = {k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k}
     db = get_db()
-    db.execute('INSERT INTO assets (name, location, custom_data, next_pm_date, pm_frequency_days, technician_id) VALUES (?, ?, ?, ?, ?, ?)',(name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id))
+    db.execute('INSERT INTO assets (name, location, custom_data, next_pm_date, pm_frequency_days, technician_id) VALUES (?, ?, ?, ?, ?, ?)',
+               (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id))
     db.commit()
     flash(f'สินทรัพย์ "{name}" ถูกเพิ่มเข้าระบบเรียบร้อยแล้ว', 'success')
     return redirect(url_for('index'))
@@ -158,7 +157,8 @@ def edit_asset(asset_id):
         pm_frequency_days = request.form.get('pm_frequency_days') or None
         technician_id = request.form.get('technician_id') or None
         custom_data = {k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k}
-        db.execute('UPDATE assets SET name = ?, location = ?, custom_data = ?, next_pm_date = ?, pm_frequency_days = ?, technician_id = ? WHERE id = ?', (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, asset_id))
+        db.execute('UPDATE assets SET name = ?, location = ?, custom_data = ?, next_pm_date = ?, pm_frequency_days = ?, technician_id = ? WHERE id = ?',
+                   (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, asset_id))
         db.commit()
         flash(f'ข้อมูลสินทรัพย์ "{name}" ถูกอัปเดตเรียบร้อยแล้ว', 'success')
         return redirect(url_for('asset_detail', asset_id=asset_id))
@@ -172,7 +172,11 @@ def edit_asset(asset_id):
 @login_required
 def my_tasks():
     db = get_db()
-    tasks = db.execute("""SELECT id, name, location, next_pm_date FROM assets WHERE technician_id = ? AND next_pm_date IS NOT NULL AND next_pm_date != '' AND date(next_pm_date) <= date('now', '+7 days') ORDER BY next_pm_date ASC """, (session['user_id'],)).fetchall()
+    tasks = db.execute("""
+        SELECT id, name, location, next_pm_date 
+        FROM assets WHERE technician_id = ? AND next_pm_date IS NOT NULL AND next_pm_date != '' AND date(next_pm_date) <= date('now', '+7 days')
+        ORDER BY next_pm_date ASC
+    """, (session['user_id'],)).fetchall()
     return render_template('my_tasks.html', tasks=tasks)
 
 @app.route('/asset/<int:asset_id>')
@@ -240,41 +244,37 @@ def pm_events_api():
     events = [{'title': asset['name'], 'start': asset['next_pm_date'], 'url': url_for('asset_detail', asset_id=asset['id'])} for asset in assets_with_pm]
     return jsonify(events)
 
-# --- NEW: Reporting and Exporting Routes ---
-@app.route('/reports')
-@login_required
-@admin_required
-def reports():
-    db = get_db()
-    costs_per_month = db.execute("""
-        SELECT strftime('%Y-%m', date) as month, SUM(cost) as total_cost
-        FROM maintenance_history WHERE cost > 0 GROUP BY month ORDER BY month ASC LIMIT 12
-    """).fetchall()
-    job_types = db.execute("""
-        SELECT CASE WHEN description LIKE '%(PM)%' THEN 'Preventive Maintenance' ELSE 'Corrective Maintenance' END as job_type, COUNT(*) as count
-        FROM maintenance_history GROUP BY job_type
-    """).fetchall()
-    cost_data = {"labels": [row['month'] for row in costs_per_month], "data": [row['total_cost'] for row in costs_per_month]}
-    job_type_data = {"labels": [row['job_type'] for row in job_types], "data": [row['count'] for row in job_types]}
-    return render_template('reports.html', cost_data=cost_data, job_type_data=job_type_data)
-
-@app.route('/export/asset/<int:asset_id>/history')
+# --- ฟังก์ชันใหม่สำหรับ Export CSV ---
+@app.route('/export_asset_history/<int:asset_id>')
 @login_required
 def export_asset_history(asset_id):
+    """
+    ส่งออกประวัติการซ่อมบำรุงของสินทรัพย์ที่ระบุเป็นไฟล์ CSV
+    """
     db = get_db()
+    
     asset = db.execute('SELECT name FROM assets WHERE id = ?', (asset_id,)).fetchone()
-    history = db.execute('SELECT date, description, cost FROM maintenance_history WHERE asset_id = ? ORDER BY date DESC', (asset_id,)).fetchall()
     if not asset:
-        return "Asset not found", 404
-    si = io.StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['Date', 'Description', 'Cost'])
-    for row in history:
-        cw.writerow([row['date'], row['description'], row['cost']])
-    output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = f"attachment; filename=history_{asset['name']}.csv"
-    output.headers["Content-type"] = "text/csv"
-    return output
+        flash('ไม่พบสินทรัพย์ที่ต้องการ', 'error')
+        return redirect(url_for('index'))
+    
+    history = db.execute('SELECT date, description, cost FROM maintenance_history WHERE asset_id = ? ORDER BY date DESC', (asset_id,)).fetchall()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow(['Date', 'Description', 'Cost'])
+    
+    for item in history:
+        writer.writerow([item['date'], item['description'], item['cost']])
+    
+    output.seek(0)
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename=history_{asset['name'].replace(' ', '_')}_{asset_id}.csv"}
+    )
+# ------------------------------------
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
