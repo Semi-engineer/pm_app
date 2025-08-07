@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">รายงานสรุปผล</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                ค่าใช้จ่ายในการซ่อมบำรุงรายเดือน
+            </div>
+            <div class="card-body">
+                <canvas id="costChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                ประเภทงานซ่อม
+            </div>
+            <div class="card-body">
+                <canvas id="jobTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Cost Chart ---
+    const costCtx = document.getElementById('costChart');
+    new Chart(costCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ cost_data.labels|tojson }},
+            datasets: [{
+                label: 'ค่าใช้จ่ายรวม (บาท)',
+                data: {{ cost_data.data|tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // --- Job Type Chart ---
+    const jobTypeCtx = document.getElementById('jobTypeChart');
+    new Chart(jobTypeCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ job_type_data.labels|tojson }},
+            datasets: [{
+                label: 'จำนวนงาน',
+                data: {{ job_type_data.data|tojson }},
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.6)',
+                    'rgba(255, 193, 7, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)'
+                ],
+                borderWidth: 1
+            }]
+        }
+    });
+});
+</script>
+{% endblock %}
