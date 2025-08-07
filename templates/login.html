@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center">เข้าสู่ระบบ</h2>
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">ชื่อผู้ใช้ (Username)</label>
+                        <input type="text" name="username" id="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">รหัสผ่าน (Password)</label>
+                        <input type="password" name="password" id="password" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            ยังไม่มีบัญชี? <a href="{{ url_for('register') }}">สร้างบัญชีใหม่ที่นี่</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

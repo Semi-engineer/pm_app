@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">งานของฉัน (My Tasks)</h2>
+
+{% if tasks %}
+    <p>นี่คือรายการงาน PM ที่ถึงกำหนดและอยู่ในความรับผิดชอบของคุณ</p>
+    <div class="list-group">
+        {% for task in tasks %}
+            <a href="{{ url_for('asset_detail', asset_id=task.id) }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ task.name }}</h5>
+                    <small>กำหนด: {{ task.next_pm_date }}</small>
+                </div>
+                <p class="mb-1">{{ task.location }}</p>
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-success" role="alert">
+      เยี่ยมมาก! คุณไม่มีงาน PM ค้างอยู่ในขณะนี้
+    </div>
+{% endif %}
+
+{% endblock %}
