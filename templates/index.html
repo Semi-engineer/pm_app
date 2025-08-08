@@ -29,8 +29,14 @@
                 </div>
 
                 <div class="mt-3">
-                    <label for="asset_image" class="form-label">รูปภาพเครื่องจักร:</label>
-                    <input class="form-control" type="file" id="asset_image" name="asset_image" accept="image/*">
+                    <label class="form-label">รูปภาพเครื่องจักร:</label>
+                    <div>
+                        <label for="asset_image" class="btn btn-secondary">เลือกไฟล์</label>
+
+                        <input type="file" id="asset_image" name="asset_image" accept="image/*" class="d-none">
+                        
+                        <span id="file-chosen" class="ms-3 text-muted">ยังไม่ได้เลือกไฟล์</span>
+                    </div>
                 </div>
                 <hr class="my-4">
                 <h5>กำหนดการบำรุงรักษา (PM) และผู้รับผิดชอบ</h5>
@@ -65,7 +71,7 @@
             <form action="{{ url_for('index') }}" method="get" class="row g-2 align-items-center">
                 <div class="col-md-5">
                     <input type="search" name="q" id="search" class="form-control" 
-                           placeholder="ค้นหาจากชื่อ, ตำแหน่ง, หรือข้อมูลเพิ่มเติม..." 
+                           placeholder="ค้นหาจากชื่อ, แผนก, หรือข้อมูลเพิ่มเติม..." 
                            value="{{ search_query or '' }}">
                 </div>
                 <div class="col-auto">
@@ -83,7 +89,7 @@
             <thead class="table-light">
                 <tr>
                     <th>ชื่อเครื่องจักร</th>
-                    <th>ตำแหน่ง</th>
+                    <th>แผนก</th>
                     {% if session.role == 'admin' %}<th>การจัดการ</th>{% endif %}
                 </tr>
             </thead>
@@ -130,4 +136,12 @@
     }
     </script>
     {% endif %}
+    <script>
+        const assetImageInput = document.getElementById('asset_image');
+        const fileChosenSpan = document.getElementById('file-chosen');
+
+        assetImageInput.addEventListener('change', function(){
+            fileChosenSpan.textContent = this.files.length > 0 ? this.files[0].name : 'ยังไม่ได้เลือกไฟล์';
+        });
+    </script>
 {% endblock %}

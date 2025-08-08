@@ -34,7 +34,7 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">ชื่อ</dt><dd class="col-sm-8">{{ asset.name }}</dd>
-                    <dt class="col-sm-4">ตำแหน่ง</dt><dd class="col-sm-8">{{ asset.location }}</dd>
+                    <dt class="col-sm-4">แผนก</dt><dd class="col-sm-8">{{ asset.location }}</dd>
                     {% if asset.technician_name %}<dt class="col-sm-4">ผู้รับผิดชอบ</dt><dd class="col-sm-8">{{ asset.technician_name }}</dd>{% endif %}
                     {% if asset.next_pm_date %}<dt class="col-sm-4">PM ครั้งถัดไป</dt><dd class="col-sm-8">{{ asset.next_pm_date }}</dd>{% endif %}
                     {% if asset.pm_frequency_days %}<dt class="col-sm-4">ความถี่ PM</dt><dd class="col-sm-8">ทุกๆ {{ asset.pm_frequency_days }} วัน</dd>{% endif %}

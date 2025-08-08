@@ -18,8 +18,12 @@
                 </div>
             </div>
             <div class="mt-3">
-                <label for="asset_image" class="form-label">อัปโหลดรูปภาพใหม่ (จะเขียนทับรูปเดิม):</label>
-                <input class="form-control" type="file" id="asset_image" name="asset_image" accept="image/*">
+                <label class="form-label">อัปโหลดรูปภาพใหม่ (จะเขียนทับรูปเดิม):</label>
+                <div>
+                    <label for="asset_image" class="btn btn-secondary">เลือกไฟล์ใหม่</label>
+                    <input type="file" id="asset_image" name="asset_image" accept="image/*" class="d-none">
+                    <span id="file-chosen" class="ms-3 text-muted">ยังไม่ได้เลือกไฟล์</span>
+                </div>
                 <input type="hidden" name="current_image" value="{{ asset.asset_image_filename or '' }}">
                 {% if asset.asset_image_filename %}
                     <div class="mt-2">
@@ -107,5 +111,14 @@
         `;
         container.appendChild(div);
     }
+</script>
+
+<script>
+    const assetImageInput = document.getElementById('asset_image');
+    const fileChosenSpan = document.getElementById('file-chosen');
+
+    assetImageInput.addEventListener('change', function(){
+        fileChosenSpan.textContent = this.files.length > 0 ? this.files[0].name : 'ยังไม่ได้เลือกไฟล์';
+    });
 </script>
 {% endblock %}
