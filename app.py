@@ -42,6 +42,26 @@ def get_db():
         g.db.row_factory = sqlite3.Row
     return g.db
 
+def init_database():
+    """Checks if the database exists, and if not, creates it and the tables."""
+    db_path = os.path.join(app.instance_path, 'maintenance.db')
+    if not os.path.exists(db_path):
+        print("Database not found. Creating a new one...")
+        try:
+            # Ensure instance folder exists
+            os.makedirs(app.instance_path, exist_ok=True)
+            
+            # Connect to create the file and run the schema script
+            db = sqlite3.connect(db_path)
+            with app.open_resource('schema.sql', mode='r') as f:
+                db.cursor().executescript(f.read())
+            db.commit()
+            db.close()
+            print(f"Database created successfully at {db_path}")
+        except Exception as e:
+            print(f"An error occurred while creating the database: {e}")
+
+
 @app.teardown_appcontext
 def close_connection(exception):
     db = g.pop('db', None)
@@ -362,4 +382,5 @@ def export_asset_history(asset_id):
 
 # --- Main Execution ---
 if __name__ == '__main__':
+    init_database()
     app.run(debug=True)

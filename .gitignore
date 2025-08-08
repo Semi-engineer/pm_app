@@ -31,3 +31,6 @@ Thumbs.db
 
 # folder ที่ไม่ต้องการใน Git
 uploads/
+
+# specific files to ignore
+*.spec

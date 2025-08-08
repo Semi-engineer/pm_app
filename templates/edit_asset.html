@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2 class="mb-4">แก้ไขข้อมูลสินทรัพย์: {{ asset.name }}</h2>
+<h2 class="mb-4">แก้ไขข้อมูลเครื่องจักร: {{ asset.name }}</h2>
 
 <form action="{{ url_for('edit_asset', asset_id=asset.id) }}" method="post" enctype="multipart/form-data">
     <div class="card mb-4">
@@ -9,11 +9,11 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="name" class="form-label">ชื่อสินทรัพย์/เครื่องจักร:</label>
+                    <label for="name" class="form-label">ชื่อเครื่องจักร:</label>
                     <input type="text" id="name" name="name" class="form-control" value="{{ asset.name }}" required>
                 </div>
                 <div class="col-md-6">
-                    <label for="location" class="form-label">ตำแหน่งที่ตั้ง:</label>
+                    <label for="location" class="form-label">แผนก:</label>
                     <input type="text" id="location" name="location" class="form-control" value="{{ asset.location }}" required>
                 </div>
             </div>
