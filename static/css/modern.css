@@ -1,0 +1,240 @@
+/*
+ * Modern Standalone Stylesheet for PM Application
+ * Features: Fluid Typography, Modern UI, Auto Dark Mode
+ */
+
+/* --- Google Fonts Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap');
+
+/* --- 1. Light Theme Variables (Default) --- */
+:root {
+    --bg-color: #f4f7f9;
+    --card-bg-color: #ffffff;
+    --text-color: #2c3e50;
+    --text-color-muted: #7f8c8d;
+    --border-color: #e4e7eb;
+    --primary-color: #3498db;
+    --primary-hover-color: #2980b9;
+    --danger-color: #e74c3c;
+    --success-color: #2ecc71;
+    --shadow-color: rgba(44, 62, 80, 0.1);
+    --font-family: 'Sarabun', sans-serif;
+}
+
+/* --- 2. Dark Theme Variables --- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a202c;
+        --card-bg-color: #2d3748;
+        --text-color: #e2e8f0;
+        --text-color-muted: #a0aec0;
+        --border-color: #4a5568;
+        --primary-color: #4299e1;
+        --primary-hover-color: #63b3ed;
+        --shadow-color: rgba(0, 0, 0, 0.2);
+    }
+}
+
+/* --- 3. Global Styles & Fluid Typography --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); /* Fluid font size */
+    line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+a:hover {
+    color: var(--primary-hover-color);
+}
+
+/* --- 4. Layout --- */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+.row > * {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 100%;
+}
+@media (min-width: 768px) {
+    .col-md-4 { flex: 1 0 0; min-width: 0; }
+    .col-md-5 { flex: 0 0 calc(41.66% - 1.5rem); }
+    .col-md-6 { flex: 1 0 0; min-width: 0; }
+    .col-md-7 { flex: 0 0 calc(58.33% - 1.5rem); }
+}
+@media (min-width: 992px) {
+    .col-lg-4 { flex: 1 0 0; min-width: 0; }
+    .col-lg-8 { flex: 0 0 calc(66.66% - 1.5rem); }
+}
+
+
+/* --- 5. Header (Sticky) & Navigation --- */
+header {
+    background-color: var(--card-bg-color);
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+header .nav {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+}
+header .nav-link {
+    font-weight: 500;
+    color: var(--text-color-muted);
+}
+header .nav-link:hover, header .nav-link.active {
+    color: var(--primary-color);
+}
+main {
+    padding-top: 2rem;
+}
+
+
+/* --- 6. Components --- */
+
+/* Cards */
+.card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+.card-header {
+    padding: 1rem 1.5rem;
+    font-weight: 700;
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+}
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.btn-primary { background-color: var(--primary-color); color: #fff; }
+.btn-primary:hover { background-color: var(--primary-hover-color); }
+.btn-secondary { background-color: var(--text-color-muted); color: #fff; }
+.btn-danger { background-color: var(--danger-color); color: #fff; }
+.btn-success { background-color: var(--success-color); color: #fff; }
+
+/* Forms */
+.form-label {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.form-control, .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+.form-control:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-color, 0.2);
+}
+
+/* Tables */
+.table-responsive {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow-x: auto;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.table thead th {
+    font-weight: 700;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    font-size: 0.85em;
+}
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Alerts */
+.alert {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
