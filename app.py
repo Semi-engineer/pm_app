@@ -1,10 +1,12 @@
 import sqlite3
 import json
 import os
+import sys 
 import functools
 import click
 import io
 import csv
+import webbrowser
 from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, session, Response, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -44,23 +46,37 @@ def get_db():
 
 def init_database():
     """Checks if the database exists, and if not, creates it and the tables."""
-    db_path = os.path.join(app.instance_path, 'maintenance.db')
+    
+    # --- สร้าง Path ไปยังโฟลเดอร์ instance ---
+    # ส่วนนี้จะซับซ้อนขึ้นเพื่อรองรับการทำงานใน .exe
+    if getattr(sys, 'frozen', False):
+        # ถ้ากำลังรันใน .exe ให้ใช้ path ของ .exe
+        application_path = os.path.dirname(sys.executable)
+    else:
+        # ถ้ารันเป็นสคริปต์ปกติ ให้ใช้ path ของไฟล์ .py
+        application_path = os.path.dirname(os.path.abspath(__file__))
+        
+    instance_path = os.path.join(application_path, 'instance')
+    db_path = os.path.join(instance_path, 'maintenance.db')
+
+    # --- ตรวจสอบและสร้างฐานข้อมูล ---
     if not os.path.exists(db_path):
         print("Database not found. Creating a new one...")
         try:
-            # Ensure instance folder exists
-            os.makedirs(app.instance_path, exist_ok=True)
+            os.makedirs(instance_path, exist_ok=True)
             
-            # Connect to create the file and run the schema script
+            # --- สร้าง Path ไปยัง schema.sql ที่ถูกต้อง ---
+            # ใช้หลักการเดียวกับข้างบนเพื่อหา schema.sql
+            schema_path = os.path.join(application_path, 'schema.sql')
+
             db = sqlite3.connect(db_path)
-            with app.open_resource('schema.sql', mode='r') as f:
+            with open(schema_path, mode='r', encoding='utf-8') as f:
                 db.cursor().executescript(f.read())
             db.commit()
             db.close()
             print(f"Database created successfully at {db_path}")
         except Exception as e:
             print(f"An error occurred while creating the database: {e}")
-
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -380,7 +396,12 @@ def export_asset_history(asset_id):
         headers={"Content-Disposition": f"attachment;filename=history_{asset['name'].replace(' ', '_')}_{asset_id}.csv"}
     )
 
-# --- Main Execution ---
 if __name__ == '__main__':
-    init_database()
+    with app.app_context():
+        init_database()
+
+    # ตรวจสอบว่าไม่ได้กำลังรันใน reloader process
+    if not os.environ.get('WERKZEUG_RUN_MAIN'):
+        webbrowser.open_new('http://127.0.0.1:5000')
+
     app.run(debug=True)
