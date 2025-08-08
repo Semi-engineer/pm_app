@@ -1,54 +1,59 @@
 /*
  * ====================================================================
- * Modern CSS - Revamped Edition
- * Description: A complete overhaul focusing on neumorphism, soft UI,
- * and an enhanced, clean user experience.
- * Version: 2.0
+ * Modern CSS - Professional Technician Palette
+ * Description: A color palette update for a more professional,
+ * high-contrast, and serious tone. UX/UI remains the same.
+ * Version: 2.2
  * ====================================================================
  */
 
 /* --- Google Fonts Import --- */
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap');
 
-/* --- 1. Core Variables (Light & Dark Themes) --- */
+/* --- 1. Core Variables (Professional Navy/Slate Theme) --- */
 :root {
-    /* Color Palette */
-    --primary-color: #3B82F6;       /* A modern, vibrant blue */
-    --primary-hover-color: #2563EB;
-    --text-color: #1F2937;          /* Dark gray for high contrast */
-    --text-color-muted: #6B7280;    /* Softer gray for secondary text */
-    --bg-color: #E0E5EC;            /* Light gray for Neumorphic effect */
-    --border-color: #D1D9E6;
-    --success-color: #10B981;
-    --danger-color: #EF4444;
+    /* Color Palette - โทนสีใหม่ที่จริงจังและชัดเจนขึ้น */
+    --primary-color: #34568B;       /* สีน้ำเงินเข้ม (Deep Blue) */
+    --primary-hover-color: #2A4365; /* เข้มขึ้นเมื่อ hover */
+    --text-color: #1A202C;          /* สีเทาเข้มเกือบดำ (Slate Gray) */
+    --text-color-muted: #4A5568;    /* สีเทารอง */
+    --bg-color: #E2E8F0;            /* พื้นหลังสีเทาที่เข้มขึ้นเล็กน้อย */
+    --border-color: #CBD5E0;
+    --success-color: #2F855A;       /* สีเขียวเข้ม */
+    --danger-color: #C53030;        /* สีแดงเข้ม */
 
-    /* Sizing & Spacing */
+    /* Sizing & Spacing - เหมือนเดิม */
     --spacing-unit: 1rem;
     --border-radius-sm: 8px;
     --border-radius-md: 16px;
 
-    /* Font */
+    /* Font - เหมือนเดิม */
     --font-family: 'Sarabun', sans-serif;
 
-    /* Neumorphic Shadows */
-    --shadow-light: inset 6px 6px 12px #c5c9d2, inset -6px -6px 12px #fbfdff;
-    --shadow-dark: 6px 6px 12px #c5c9d2, -6px -6px 12px #fbfdff;
+    /* Neumorphic Shadows - ปรับให้เข้ากับพื้นหลังใหม่ */
+    --shadow-light: inset 6px 6px 12px #c1c9d2, inset -6px -6px 12px #ffffff;
+    --shadow-dark: 6px 6px 12px #c1c9d2, -6px -6px 12px #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
+        /* Dark mode ใช้โทนสีเดิมที่สวยงามอยู่แล้ว */
         --primary-color: #60A5FA;
         --primary-hover-color: #93C5FD;
         --text-color: #E5E7EB;
         --text-color-muted: #9CA3AF;
         --bg-color: #212833;
         --border-color: #374151;
-
-        /* Neumorphic Shadows for Dark Mode */
         --shadow-light: inset 4px 4px 8px #1c222b, inset -4px -4px 8px #262e3b;
         --shadow-dark: 5px 5px 10px #1c222b, -5px -5px 10px #262e3b;
     }
 }
+
+/* ====================================================================
+   ส่วนที่เหลือของไฟล์ CSS ทั้งหมดเหมือนเดิมทุกประการ 
+   เนื่องจากเราเปลี่ยนแค่ตัวแปรสีด้านบน
+  ====================================================================
+*/
 
 /* --- 2. Global Resets & Base Styles --- */
 *, *::before, *::after {
@@ -127,7 +132,7 @@ footer {
 }
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 8px 8px 16px #c5c9d2, -8px -8px 16px #fbfdff;
+    box-shadow: 8px 8px 16px #c1c9d2, -8px -8px 16px #ffffff;
 }
 @media (prefers-color-scheme: dark) {
     .card:hover {
@@ -246,7 +251,7 @@ footer {
 }
 .table-hover tbody tr:hover {
     transform: scale(1.02);
-    box-shadow: 8px 8px 16px #c5c9d2, -8px -8px 16px #fbfdff;
+    box-shadow: 8px 8px 16px #c1c9d2, -8px -8px 16px #ffffff;
     z-index: 10;
     position: relative;
 }
@@ -266,7 +271,7 @@ footer {
     box-shadow: var(--shadow-dark);
 }
 .alert-warning {
-    background: #FFEDD5; /* Tailwind Amber 100 */
+    background: #FEF3C7; /* Tailwind Amber 100 */
     color: #9A3412;      /* Tailwind Amber 800 */
 }
 @media (prefers-color-scheme: dark) {

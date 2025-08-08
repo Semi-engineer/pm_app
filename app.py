@@ -15,7 +15,7 @@ from collections import Counter
 
 # --- App Configuration ---
 app = Flask(__name__)
-app.secret_key = 'a-super-secret-key-that-you-should-change'
+app.secret_key = os.environ.get('SECRET_KEY', 'a-super-secret-key-that-you-should-change')
 
 # Configuration for File Uploads
 UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
@@ -36,6 +36,41 @@ def allowed_file(filename):
     """Checks if the file extension is allowed."""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# vvv --- ฟังก์ชันผู้ช่วยใหม่ที่สร้างขึ้นเพื่อลดโค้ดซ้ำซ้อน --- vvv
+def _process_asset_form(request, existing_filename=None):
+    """
+    ประมวลผลข้อมูลจากฟอร์มสำหรับ 'add' และ 'edit' asset
+    - ดึงข้อมูลจากฟอร์ม
+    - จัดการไฟล์อัปโหลด
+    - คืนค่าเป็น Dictionary ที่พร้อมสำหรับบันทึกลง DB
+    """
+    # 1. ดึงข้อมูลจากฟอร์ม
+    form_data = {
+        'name': request.form['name'],
+        'location': request.form['location'],
+        'next_pm_date': request.form.get('next_pm_date') or None,
+        'pm_frequency_days': request.form.get('pm_frequency_days') or None,
+        'technician_id': request.form.get('technician_id') or None,
+        'custom_data': json.dumps({
+            k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k
+        })
+    }
+
+    # 2. จัดการไฟล์อัปโหลด
+    image_filename = existing_filename # ใช้ไฟล์เดิมเป็นค่าเริ่มต้น
+    if 'asset_image' in request.files:
+        file = request.files['asset_image']
+        # ถ้ามีการอัปโหลดไฟล์ใหม่ ให้บันทึกและอัปเดตชื่อไฟล์
+        if file and file.filename != '' and allowed_file(file.filename):
+            image_filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+            
+    form_data['asset_image_filename'] = image_filename
+    
+    return form_data
+# ^^^ --- จบส่วนของฟังก์ชันผู้ช่วย --- ^^^
+
 
 # --- Database Connection ---
 def get_db():
@@ -197,67 +232,59 @@ def index():
     technicians = get_all_technicians()
     return render_template('index.html', assets=assets, pm_due_assets=pm_due_assets, technicians=technicians, search_query=search_query)
 
+# vvv --- แก้ไขฟังก์ชัน add_asset ให้เรียกใช้ฟังก์ชันผู้ช่วย --- vvv
 @app.route('/add_asset', methods=['POST'])
 @login_required
 @admin_required
 def add_asset():
-    # --- Form data ---
-    name, location = request.form['name'], request.form['location']
-    next_pm_date = request.form.get('next_pm_date') or None
-    pm_frequency_days = request.form.get('pm_frequency_days') or None
-    technician_id = request.form.get('technician_id') or None
-    custom_data = {k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k}
+    # เรียกใช้ฟังก์ชันผู้ช่วยเพื่อประมวลผลข้อมูลจากฟอร์ม
+    asset_data = _process_asset_form(request)
     
-    # --- File Upload Handling ---
-    image_filename = None
-    if 'asset_image' in request.files:
-        file = request.files['asset_image']
-        if file and file.filename != '' and allowed_file(file.filename):
-            image_filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-
     # --- Database Insert ---
     db = get_db()
-    db.execute('INSERT INTO assets (name, location, custom_data, next_pm_date, pm_frequency_days, technician_id, asset_image_filename) VALUES (?, ?, ?, ?, ?, ?, ?)',
-               (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, image_filename))
+    db.execute(
+        'INSERT INTO assets (name, location, custom_data, next_pm_date, pm_frequency_days, technician_id, asset_image_filename) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (asset_data['name'], asset_data['location'], asset_data['custom_data'], 
+         asset_data['next_pm_date'], asset_data['pm_frequency_days'], 
+         asset_data['technician_id'], asset_data['asset_image_filename'])
+    )
     db.commit()
-    flash(f'สินทรัพย์ "{name}" ถูกเพิ่มเข้าระบบเรียบร้อยแล้ว', 'success')
+    flash(f'สินทรัพย์ "{asset_data["name"]}" ถูกเพิ่มเข้าระบบเรียบร้อยแล้ว', 'success')
     return redirect(url_for('index'))
+# ^^^ --- จบการแก้ไข add_asset --- ^^^
 
+
+# vvv --- แก้ไขฟังก์ชัน edit_asset ให้เรียกใช้ฟังก์ชันผู้ช่วย --- vvv
 @app.route('/edit_asset/<int:asset_id>', methods=('GET', 'POST'))
 @login_required
 @admin_required
 def edit_asset(asset_id):
     db = get_db()
-    if request.method == 'POST':
-        # --- Form Data ---
-        name, location = request.form['name'], request.form['location']
-        next_pm_date = request.form.get('next_pm_date') or None
-        pm_frequency_days = request.form.get('pm_frequency_days') or None
-        technician_id = request.form.get('technician_id') or None
-        custom_data = {k: v for k, v in zip(request.form.getlist('custom_key'), request.form.getlist('custom_value')) if k}
+    asset_row = db.execute('SELECT * FROM assets WHERE id = ?', (asset_id,)).fetchone()
 
-        # --- File Upload Handling ---
-        image_filename = request.form.get('current_image') # Keep old image by default
-        if 'asset_image' in request.files:
-            file = request.files['asset_image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                # New file was uploaded, save it and update the filename
-                image_filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+    if request.method == 'POST':
+        # ส่งชื่อไฟล์รูปปัจจุบันเข้าไปในฟังก์ชันผู้ช่วย
+        current_image = asset_row['asset_image_filename'] if asset_row else None
+        asset_data = _process_asset_form(request, existing_filename=current_image)
         
         # --- Database Update ---
-        db.execute('UPDATE assets SET name = ?, location = ?, custom_data = ?, next_pm_date = ?, pm_frequency_days = ?, technician_id = ?, asset_image_filename = ? WHERE id = ?',
-                   (name, location, json.dumps(custom_data), next_pm_date, pm_frequency_days, technician_id, image_filename, asset_id))
+        db.execute(
+            'UPDATE assets SET name = ?, location = ?, custom_data = ?, next_pm_date = ?, pm_frequency_days = ?, technician_id = ?, asset_image_filename = ? WHERE id = ?',
+            (asset_data['name'], asset_data['location'], asset_data['custom_data'], 
+             asset_data['next_pm_date'], asset_data['pm_frequency_days'], 
+             asset_data['technician_id'], asset_data['asset_image_filename'], 
+             asset_id)
+        )
         db.commit()
-        flash(f'ข้อมูลสินทรัพย์ "{name}" ถูกอัปเดตเรียบร้อยแล้ว', 'success')
+        flash(f'ข้อมูลสินทรัพย์ "{asset_data["name"]}" ถูกอัปเดตเรียบร้อยแล้ว', 'success')
         return redirect(url_for('asset_detail', asset_id=asset_id))
     
-    asset_row = db.execute('SELECT * FROM assets WHERE id = ?', (asset_id,)).fetchone()
+    # ส่วนของ GET request ไม่มีการเปลี่ยนแปลง
     asset = dict(asset_row)
     asset['custom_data'] = json.loads(asset['custom_data'])
     technicians = get_all_technicians()
     return render_template('edit_asset.html', asset=asset, technicians=technicians)
+# ^^^ --- จบการแก้ไข edit_asset --- ^^^
 
 # ... (my-tasks route is unchanged) ...
 @app.route('/my-tasks')
