@@ -277,7 +277,7 @@ header {
     align-items: center !important;
     position: sticky !important;
     top: var(--spacing-md) !important;
-    z-index: 1000 !important;
+    z-index: 999 !important;
     margin-bottom: var(--spacing-xl) !important;
     transition: var(--transition-normal) !important;
 }
@@ -484,6 +484,24 @@ header .nav-link.active {
     border-top: 1px solid var(--border-color);
     padding: var(--spacing-lg) var(--spacing-xl);
     background: var(--bg-secondary);
+}
+
+/* Modal fixes for proper display */
+.modal {
+    z-index: 1055 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+.modal-dialog {
+    margin: 1.75rem auto;
+}
+
+/* Ensure modal is visible above everything */
+.modal.show {
+    display: block !important;
 }
 
 /* --- 12. Responsive Design --- */

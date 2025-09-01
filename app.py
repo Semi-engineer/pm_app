@@ -22,6 +22,9 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Configuration continues here
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 DATABASE = os.path.join(app.instance_path, 'maintenance.db')
 
 # --- Initial Setup ---
@@ -738,6 +741,20 @@ def add_maintenance_point(asset_id):
         print(f"DEBUG: Error in add_maintenance_point: {str(e)}")
         flash(f'เกิดข้อผิดพลาด: {str(e)}', 'error')
         return redirect(url_for('asset_detail', asset_id=asset_id))
+
+@app.route('/asset/<int:asset_id>/add_maintenance_point', methods=['GET'])
+@login_required
+@admin_required
+def add_maintenance_point_page(asset_id):
+    """Display the page for adding a new maintenance point"""
+    db = get_db()
+    asset = db.execute('SELECT * FROM assets WHERE id = ?', (asset_id,)).fetchone()
+    
+    if not asset:
+        flash('ไม่พบเครื่องจักรที่ต้องการ', 'error')
+        return redirect(url_for('index'))
+    
+    return render_template('add_maintenance_point.html', asset=asset)
 
 @app.route('/edit_maintenance_point/<int:point_id>', methods=['GET', 'POST'])
 @login_required

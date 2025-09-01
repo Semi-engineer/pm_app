@@ -62,9 +62,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>จุดที่ต้องบำรุงรักษา (Maintenance Points)</h4>
             {% if session.role == 'admin' %}
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMaintenancePointModal">
-                เพิ่มจุดบำรุงรักษา
-            </button>
+            <a href="{{ url_for('add_maintenance_point_page', asset_id=asset.id) }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> เพิ่มจุดบำรุงรักษา
+            </a>
             {% endif %}
         </div>
         
@@ -190,54 +190,6 @@
     </div>
 </div>
 
-<!-- Add Maintenance Point Modal -->
-{% if session.role == 'admin' %}
-<div class="modal fade" id="addMaintenancePointModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">เพิ่มจุดบำรุงรักษาใหม่</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
-            </div>
-            <form action="{{ url_for('add_maintenance_point', asset_id=asset.id) }}" method="post" onsubmit="
-                console.log('Form submitting...');
-                const submitBtn = this.querySelector('button[type=submit]');
-                if (submitBtn.disabled) {
-                    console.log('Form already submitting, preventing duplicate');
-                    return false;
-                }
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = 'กำลังเพิ่ม...';
-                return confirm('ต้องการเพิ่มจุดบำรุงรักษานี้หรือไม่?');
-            ">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="mp_point_name" class="form-label">ชื่อจุดบำรุงรักษา * (ต้องกรอก)</label>
-                        <input type="text" id="mp_point_name" name="point_name" class="form-control" required placeholder="กรุณากรอกชื่อจุดบำรุงรักษา">
-                    </div>
-                    <div class="mb-3">
-                        <label for="mp_description" class="form-label">คำอธิบาย</label>
-                        <textarea id="mp_description" name="description" class="form-control" rows="3" placeholder="คำอธิบายเพิ่มเติม (ไม่บังคับ)"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="mp_maintenance_procedure" class="form-label">ขั้นตอนการบำรุงรักษา</label>
-                        <textarea id="mp_maintenance_procedure" name="maintenance_procedure" class="form-control" rows="4" placeholder="ขั้นตอนการบำรุงรักษา (ไม่บังคับ)"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="mp_frequency_days" class="form-label">ความถี่ (วัน)</label>
-                        <input type="number" id="mp_frequency_days" name="frequency_days" class="form-control" min="1" placeholder="จำนวนวัน">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="submit" class="btn btn-success">เพิ่มจุดบำรุงรักษา</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
-
 <div class="row gx-4 mt-5">
     <div class="col-md-5">
         <h4>เพิ่มประวัติการซ่อมบำรุง</h4>
@@ -275,6 +227,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Asset detail page loaded');
     
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap !== 'undefined') {
+        console.log('Bootstrap is loaded - version:', bootstrap.Modal.VERSION || 'unknown');
+    } else {
+        console.log('Bootstrap is NOT loaded');
+    }
+    
     // Check if modal exists
     const modal = document.getElementById('addMaintenancePointModal');
     console.log('Modal found:', modal ? 'YES' : 'NO');
@@ -294,13 +253,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Check if button exists
+    // Check if button exists and add enhanced event listener
     const button = document.querySelector('[data-bs-target="#addMaintenancePointModal"]');
     console.log('Modal button found:', button ? 'YES' : 'NO');
     
     if (button) {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
             console.log('Modal button clicked');
+            
+            // Try to manually trigger modal if Bootstrap isn't working
+            if (typeof bootstrap !== 'undefined' && modal) {
+                try {
+                    const modalInstance = new bootstrap.Modal(modal);
+                    modalInstance.show();
+                    console.log('Modal triggered manually');
+                } catch (error) {
+                    console.error('Error triggering modal:', error);
+                }
+            }
+        });
+    }
+    
+    // Test modal functionality
+    if (modal && typeof bootstrap !== 'undefined') {
+        modal.addEventListener('show.bs.modal', function() {
+            console.log('Modal is about to show');
+        });
+        
+        modal.addEventListener('shown.bs.modal', function() {
+            console.log('Modal has been shown');
+        });
+        
+        modal.addEventListener('hide.bs.modal', function() {
+            console.log('Modal is about to hide');
         });
     }
 });

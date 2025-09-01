@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">เพิ่มจุดบำรุงรักษาใหม่</h2>
+            <a href="{{ url_for('asset_detail', asset_id=asset.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> กลับไปยังรายละเอียดเครื่องจักร
+            </a>
+        </div>
+        <p class="text-muted mt-2">เครื่องจักร: {{ asset.name }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle text-success me-2"></i>
+                    ข้อมูลจุดบำรุงรักษา
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_maintenance_point', asset_id=asset.id) }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="point_name" class="form-label">ชื่อจุดบำรุงรักษา <span class="text-danger">*</span></label>
+                        <input type="text" id="point_name" name="point_name" class="form-control" required 
+                               placeholder="เช่น มอเตอร์ขับเคลื่อน, ระบบไฮดรอลิก, เซ็นเซอร์อุณหภูมิ">
+                        <div class="form-text">กรุณาระบุชื่อจุดบำรุงรักษาที่ชัดเจน</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">คำอธิบาย</label>
+                        <textarea id="description" name="description" class="form-control" rows="3" 
+                                  placeholder="คำอธิบายเพิ่มเติมเกี่ยวกับจุดบำรุงรักษานี้"></textarea>
+                        <div class="form-text">อธิบายรายละเอียดของจุดบำรุงรักษา (ไม่บังคับ)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="maintenance_procedure" class="form-label">ขั้นตอนการบำรุงรักษา</label>
+                        <textarea id="maintenance_procedure" name="maintenance_procedure" class="form-control" rows="5" 
+                                  placeholder="1. ตรวจสอบ...&#10;2. ทำความสะอาด...&#10;3. เปลี่ยนชิ้นส่วน..."></textarea>
+                        <div class="form-text">ระบุขั้นตอนการบำรุงรักษาที่ต้องทำ (ไม่บังคับ)</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="frequency_days" class="form-label">ความถี่การบำรุงรักษา (วัน)</label>
+                                <input type="number" id="frequency_days" name="frequency_days" class="form-control" min="1" 
+                                       placeholder="เช่น 30, 90, 365">
+                                <div class="form-text">จำนวนวันระหว่างการบำรุงรักษา (ไม่บังคับ)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="point_images" class="form-label">รูปภาพอ้างอิง</label>
+                                <input type="file" id="point_images" name="point_images" class="form-control" 
+                                       accept="image/*" multiple>
+                                <div class="form-text">อัปโหลดรูปภาพของจุดบำรุงรักษา (ไม่บังคับ)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="image_description" class="form-label">คำอธิบายรูปภาพ</label>
+                        <input type="text" id="image_description" name="image_description" class="form-control" 
+                               placeholder="คำอธิบายสำหรับรูปภาพที่อัปโหลด">
+                        <div class="form-text">คำอธิบายสำหรับรูปภาพ (ใช้เมื่ออัปโหลดรูปภาพ)</div>
+                    </div>
+
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('asset_detail', asset_id=asset.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> ยกเลิก
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> บันทึกจุดบำรุงรักษา
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form validation
+    const form = document.querySelector('form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    form.addEventListener('submit', function(e) {
+        const pointName = document.getElementById('point_name').value.trim();
+        
+        if (!pointName) {
+            e.preventDefault();
+            alert('กรุณากรอกชื่อจุดบำรุงรักษา');
+            document.getElementById('point_name').focus();
+            return false;
+        }
+        
+        // Disable submit button to prevent double submission
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+    });
+});
+</script>
+{% endblock %}
