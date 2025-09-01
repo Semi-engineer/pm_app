@@ -266,8 +266,8 @@ h6 { font-size: 1rem; }
 /* --- 6. Enhanced Header --- */
 header {
     background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
+    backdrop-filter: blur(20px) !important;
     border: 1px solid var(--glass-border) !important;
     border-radius: var(--radius-xl) !important;
     box-shadow: var(--glass-shadow) !important;
@@ -603,8 +603,8 @@ header .nav-link.active {
 /* --- 15. Special Effects --- */
 .glassmorphism {
     background: var(--glass-bg);
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
 }
