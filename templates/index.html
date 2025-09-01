@@ -25,23 +25,6 @@
         </div>
     </div>
 </div>
-                </div>
-                <h1 class="display-5 fw-bold gradient-text mb-3">ระบบจัดการการบำรุงรักษา</h1>
-                <p class="lead text-muted">จัดการและติดตามการบำรุงรักษาเครื่องจักรอย่างมีประสิทธิภาพ</p>
-                {% if not session.user_id %}
-                <div class="mt-4">
-                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg me-3 hover-lift">
-                        <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
-                    </a>
-                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg hover-lift">
-                        <i class="fas fa-user-plus me-2"></i>สมัครสมาชิก
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
 
 {% if session.user_id %}
 <!-- PM Alerts -->

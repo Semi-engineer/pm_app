@@ -22,9 +22,6 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Configuration continues here
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 DATABASE = os.path.join(app.instance_path, 'maintenance.db')
 
 # --- Initial Setup ---
