@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">จัดการอะไหล่ (Parts Stock)</h2>
+    {% if session.role == 'admin' %}
+    <a href="{{ url_for('add_part') }}" class="btn btn-success">เพิ่มอะไหล่ใหม่</a>
+    {% endif %}
+</div>
+
+<!-- Low Stock Alert -->
+{% if low_stock_parts %}
+<div class="alert alert-warning mb-4">
+    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> แจ้งเตือนสต็อกต่ำ</h5>
+    <p class="mb-2">อะไหล่ที่มีสต็อกต่ำหรือหมด:</p>
+    <ul class="mb-0">
+        {% for part in low_stock_parts %}
+        <li>
+            <a href="{{ url_for('part_detail', part_id=part.id) }}" class="text-decoration-none">
+                <strong>{{ part.part_number }}</strong> - {{ part.part_name }} 
+                (คงเหลือ: {{ part.current_stock }}, ขั้นต่ำ: {{ part.minimum_stock }})
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">ค้นหาอะไหล่</label>
+                <input type="text" id="search" name="q" class="form-control" 
+                       placeholder="ค้นหาจากรหัส, ชื่อ, หรือคำอธิบาย" 
+                       value="{{ search_query }}">
+            </div>
+            <div class="col-md-4">
+                <label for="category" class="form-label">หมวดหมู่</label>
+                <select id="category" name="category" class="form-select">
+                    <option value="">ทุกหมวดหมู่</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.category }}" {% if cat.category == category_filter %}selected{% endif %}>
+                        {{ cat.category }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">ค้นหา</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Parts List -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">รายการอะไหล่ ({{ parts|length }} รายการ)</h5>
+    </div>
+    <div class="card-body">
+        {% if parts %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>รหัสอะไหล่</th>
+                        <th>ชื่ออะไหล่</th>
+                        <th>หมวดหมู่</th>
+                        <th>สต็อกปัจจุบัน</th>
+                        <th>ขั้นต่ำ</th>
+                        <th>ราคา/หน่วย</th>
+                        <th>สถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for part in parts %}
+                    <tr class="{% if part.current_stock <= part.minimum_stock %}table-warning{% endif %}">
+                        <td>
+                            <a href="{{ url_for('part_detail', part_id=part.id) }}" class="text-decoration-none">
+                                <strong>{{ part.part_number }}</strong>
+                            </a>
+                        </td>
+                        <td>{{ part.part_name }}</td>
+                        <td>
+                            {% if part.category %}
+                            <span class="badge bg-secondary">{{ part.category }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if part.current_stock <= part.minimum_stock %}bg-danger{% elif part.current_stock <= part.minimum_stock * 2 %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ part.current_stock }}
+                            </span>
+                        </td>
+                        <td>{{ part.minimum_stock }}</td>
+                        <td>
+                            {% if part.unit_price %}
+                            ฿{{ "%.2f"|format(part.unit_price) }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if part.current_stock <= 0 %}
+                            <span class="status-indicator danger"></span> หมดสต็อก
+                            {% elif part.current_stock <= part.minimum_stock %}
+                            <span class="status-indicator warning"></span> สต็อกต่ำ
+                            {% else %}
+                            <span class="status-indicator active"></span> พร้อมใช้งาน
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('part_detail', part_id=part.id) }}" 
+                                   class="btn btn-outline-primary" title="ดูรายละเอียด">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if session.role == 'admin' %}
+                                <a href="{{ url_for('edit_part', part_id=part.id) }}" 
+                                   class="btn btn-outline-secondary" title="แก้ไข">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-info" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#stockModal{{ part.id }}" 
+                                        title="ปรับสต็อก">
+                                    <i class="fas fa-boxes"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Stock Adjustment Modal -->
+                    {% if session.role == 'admin' %}
+                    <div class="modal fade" id="stockModal{{ part.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">ปรับสต็อก: {{ part.part_name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
+                                </div>
+                                <form action="{{ url_for('adjust_stock', part_id=part.id) }}" method="post">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">สต็อกปัจจุบัน: <strong>{{ part.current_stock }}</strong></label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="transaction_type{{ part.id }}" class="form-label">ประเภทการดำเนินการ</label>
+                                            <select id="transaction_type{{ part.id }}" name="transaction_type" class="form-select" required>
+                                                <option value="in">เพิ่มสต็อก (รับเข้า)</option>
+                                                <option value="out">ลดสต็อก (เบิกออก)</option>
+                                                <option value="adjustment">ปรับปรุงสต็อก (ตั้งค่าใหม่)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="quantity{{ part.id }}" class="form-label">จำนวน</label>
+                                            <input type="number" id="quantity{{ part.id }}" name="quantity" 
+                                                   class="form-control" min="0" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="unit_cost{{ part.id }}" class="form-label">ราคา/หน่วย (ไม่บังคับ)</label>
+                                            <input type="number" id="unit_cost{{ part.id }}" name="unit_cost" 
+                                                   class="form-control" step="0.01" min="0">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="notes{{ part.id }}" class="form-label">หมายเหตุ</label>
+                                            <textarea id="notes{{ part.id }}" name="notes" class="form-control" rows="2"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">ไม่พบอะไหล่</h5>
+            <p class="text-muted">
+                {% if search_query or category_filter %}
+                ลองปรับเปลี่ยนเงื่อนไขการค้นหา
+                {% else %}
+                เริ่มต้นโดยการเพิ่มอะไหล่แรกของคุณ
+                {% endif %}
+            </p>
+            {% if session.role == 'admin' and not search_query and not category_filter %}
+            <a href="{{ url_for('add_part') }}" class="btn btn-success">เพิ่มอะไหล่ใหม่</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

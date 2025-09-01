@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">แก้ไขจุดบำรุงรักษา: {{ point.point_name }}</h2>
+        <a href="{{ url_for('asset_detail', asset_id=point.asset_id) }}" class="btn btn-secondary">กลับไปยังสินทรัพย์</a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">ข้อมูลจุดบำรุงรักษา</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('edit_maintenance_point', point_id=point.id) }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="point_name" class="form-label">ชื่อจุดบำรุงรักษา *</label>
+                            <input type="text" id="point_name" name="point_name" class="form-control" value="{{ point.point_name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">คำอธิบาย</label>
+                            <textarea id="description" name="description" class="form-control" rows="3">{{ point.description or '' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="maintenance_procedure" class="form-label">ขั้นตอนการบำรุงรักษา</label>
+                            <textarea id="maintenance_procedure" name="maintenance_procedure" class="form-control" rows="4">{{ point.maintenance_procedure or '' }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="frequency_days" class="form-label">ความถี่ (วัน)</label>
+                                    <input type="number" id="frequency_days" name="frequency_days" class="form-control" min="1" value="{{ point.frequency_days or '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">สถานะ</label>
+                                    <select id="status" name="status" class="form-select">
+                                        <option value="active" {% if point.status == 'active' %}selected{% endif %}>ใช้งาน</option>
+                                        <option value="inactive" {% if point.status == 'inactive' %}selected{% endif %}>ไม่ใช้งาน</option>
+                                        <option value="completed" {% if point.status == 'completed' %}selected{% endif %}>เสร็จสิ้น</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="point_images" class="form-label">เพิ่มรูปภาพใหม่ (สามารถเลือกหลายไฟล์)</label>
+                            <input type="file" id="point_images" name="point_images" class="form-control" accept="image/*" multiple>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="image_description" class="form-label">คำอธิบายรูปภาพใหม่</label>
+                            <input type="text" id="image_description" name="image_description" class="form-control" placeholder="คำอธิบายสำหรับรูปภาพที่อัปโหลด">
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
+                            <a href="{{ url_for('asset_detail', asset_id=point.asset_id) }}" class="btn btn-secondary">ยกเลิก</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">รูปภาพปัจจุบัน</h6>
+                </div>
+                <div class="card-body">
+                    {% if images %}
+                        {% for image in images %}
+                        <div class="mb-3 position-relative">
+                            <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" 
+                                 alt="{{ image.image_description or 'รูปภาพจุดบำรุงรักษา' }}" 
+                                 class="img-fluid rounded shadow-sm w-100"
+                                 data-bs-toggle="modal" 
+                                 data-bs-target="#imageModal{{ image.id }}">
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="badge bg-secondary">{{ image.image_type }}</span>
+                                <form action="{{ url_for('delete_point_image', image_id=image.id) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                            onclick="return confirm('ต้องการลบรูปภาพนี้หรือไม่?')"
+                                            title="ลบรูปภาพ">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            {% if image.image_description %}
+                            <p class="text-muted small mt-1">{{ image.image_description }}</p>
+                            {% endif %}
+                            
+                            <p class="text-muted small">
+                                อัปโหลดโดย: {{ image.uploaded_by_name or 'ไม่ระบุ' }}<br>
+                                วันที่: {{ image.upload_date.split(' ')[0] }}
+                            </p>
+                            
+                            <!-- Image Modal -->
+                            <div class="modal fade" id="imageModal{{ image.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">{{ image.image_description or 'รูปภาพจุดบำรุงรักษา' }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
+                                        </div>
+                                        <div class="modal-body text-center">
+                                            <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" 
+                                                 alt="{{ image.image_description or 'รูปภาพจุดบำรุงรักษา' }}" 
+                                                 class="img-fluid">
+                                            {% if image.image_description %}
+                                            <p class="mt-3 text-muted">{{ image.image_description }}</p>
+                                            {% endif %}
+                                            <p class="text-muted">
+                                                <small>อัปโหลดโดย: {{ image.uploaded_by_name or 'ไม่ระบุ' }} | 
+                                                วันที่: {{ image.upload_date.split(' ')[0] }} | 
+                                                ประเภท: {{ image.image_type }}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">ยังไม่มีรูปภาพ</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

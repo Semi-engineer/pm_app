@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">เพิ่มอะไหล่ใหม่</h2>
+    <a href="{{ url_for('parts_index') }}" class="btn btn-secondary">กลับไปรายการอะไหล่</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">ข้อมูลอะไหล่</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('add_part') }}" method="post">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="part_number" class="form-label">รหัสอะไหล่ *</label>
+                        <input type="text" id="part_number" name="part_number" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="part_name" class="form-label">ชื่ออะไหล่ *</label>
+                        <input type="text" id="part_name" name="part_name" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">คำอธิบาย</label>
+                <textarea id="description" name="description" class="form-control" rows="3"></textarea>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="category" class="form-label">หมวดหมู่</label>
+                        <input type="text" id="category" name="category" class="form-control" 
+                               placeholder="เช่น เครื่องยนต์, ไฟฟ้า, น้ำมัน">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="manufacturer" class="form-label">ผู้ผลิต</label>
+                        <input type="text" id="manufacturer" name="manufacturer" class="form-control">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="location" class="form-label">ตำแหน่งจัดเก็บ</label>
+                        <input type="text" id="location" name="location" class="form-control" 
+                               placeholder="เช่น ชั้น A1, คลัง B">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="unit_price" class="form-label">ราคา/หน่วย (บาท)</label>
+                        <input type="number" id="unit_price" name="unit_price" class="form-control" 
+                               step="0.01" min="0" value="0">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="minimum_stock" class="form-label">สต็อกขั้นต่ำ</label>
+                        <input type="number" id="minimum_stock" name="minimum_stock" class="form-control" 
+                               min="0" value="0">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="current_stock" class="form-label">สต็อกเริ่มต้น</label>
+                        <input type="number" id="current_stock" name="current_stock" class="form-control" 
+                               min="0" value="0">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="supplier" class="form-label">ซัพพลายเออร์</label>
+                        <input type="text" id="supplier" name="supplier" class="form-control">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="supplier_contact" class="form-label">ติดต่อซัพพลายเออร์</label>
+                        <input type="text" id="supplier_contact" name="supplier_contact" class="form-control" 
+                               placeholder="เบอร์โทร, อีเมล, หรือข้อมูลติดต่อ">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">หมายเหตุ</label>
+                <textarea id="notes" name="notes" class="form-control" rows="2"></textarea>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">บันทึกอะไหล่</button>
+                <a href="{{ url_for('parts_index') }}" class="btn btn-secondary">ยกเลิก</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,49 +1,178 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<h2 class="mb-4">สรุปรายงาน (Reports)</h2>
+{% block title %}รายงานสรุป - ระบบจัดการการบำรุงรักษา{% endblock %}
 
+{% block content %}
+<!-- Header Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card glassmorphism border-0">
+            <div class="card-body py-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-container me-3">
+                        <i class="fas fa-chart-line fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-1 gradient-text">รายงานสรุป</h2>
+                        <p class="text-muted mb-0">ภาพรวมข้อมูลการบำรุงรักษาและค่าใช้จ่าย</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Data Containers -->
 <div id="costChartDataContainer" 
      data-labels='{{ cost_data.labels|tojson|safe }}'
      data-values='{{ cost_data.data|tojson|safe }}'
-     style="display: none;">
+     class="chart-hidden">
 </div>
 
 <div id="jobTypeChartDataContainer"
      data-labels='{{ job_type_data.labels|tojson|safe }}'
      data-values='{{ job_type_data.data|tojson|safe }}'
-     style="display: none;">
+     class="chart-hidden">
 </div>
 
-
-<div class="row">
+<!-- Charts Section -->
+<div class="row g-4">
     <div class="col-lg-8 mb-4">
-        <div class="card">
-            <div class="card-header">
-                กราฟสรุปค่าใช้จ่ายในการซ่อมบำรุง (รายเดือน)
+        <div class="card border-0 shadow-lg animate-fade-in">
+            <div class="card-header bg-gradient text-white border-0">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    <h5 class="mb-0">ค่าใช้จ่ายในการซ่อมบำรุง (รายเดือน)</h5>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="costChart"></canvas>
+            <div class="card-body p-4">
+                <div class="chart-container">
+                    <canvas id="costChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                กราฟสรุปประเภทของงานซ่อม
+        <div class="card border-0 shadow-lg animate-fade-in" style="animation-delay: 0.2s;">
+            <div class="card-header bg-gradient text-white border-0">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    <h5 class="mb-0">ประเภทงานซ่อม</h5>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="jobTypeChart"></canvas>
+            <div class="card-body p-4">
+                <div class="chart-container">
+                    <canvas id="jobTypeChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-{% endblock %}
+<!-- Stats Cards -->
+<div class="row g-4 mt-2">
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-md stats-card bg-gradient-primary text-white">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-tools fa-2x mb-3"></i>
+                <h3 class="mb-1">{{ total_maintenance if total_maintenance else 0 }}</h3>
+                <p class="mb-0 opacity-75">งานซ่อมทั้งหมด</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-md stats-card bg-gradient-success text-white">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-check-circle fa-2x mb-3"></i>
+                <h3 class="mb-1">{{ completed_maintenance if completed_maintenance else 0 }}</h3>
+                <p class="mb-0 opacity-75">งานเสร็จสิ้น</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-md stats-card bg-gradient-warning text-white">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-clock fa-2x mb-3"></i>
+                <h3 class="mb-1">{{ pending_maintenance if pending_maintenance else 0 }}</h3>
+                <p class="mb-0 opacity-75">งานรอดำเนินการ</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-md stats-card bg-gradient-info text-white">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-dollar-sign fa-2x mb-3"></i>
+                <h3 class="mb-1">{{ total_cost if total_cost else '0' }}</h3>
+                <p class="mb-0 opacity-75">ค่าใช้จ่ายรวม</p>
+            </div>
+        </div>
+    </div>
+</div>
 
+<style>
+.chart-hidden {
+    display: none;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.stats-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.icon-container {
+    width: 60px;
+    height: 60px;
+    background: rgba(var(--primary-color-rgb), 0.1);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.animate-fade-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+{% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script src="{{ url_for('static', filename='js/reports-chart.js') }}"></script>
 {% endblock %}

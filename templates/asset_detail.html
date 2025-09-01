@@ -1,10 +1,21 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">รายละเอียดเครื่องจักร: {{ asset.name }}</h2>
-    {% if session.role == 'admin' %}
-    <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" class="btn btn-secondary">แก้ไขข้อมูลเครื่องจักรนี้</a>
-    {% endif %}
+<!-- Asset Detail Header - Responsive Layout -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div class="flex-grow-1">
+                <h2 class="mb-0 text-break">รายละเอียดเครื่องจักร: {{ asset.name }}</h2>
+            </div>
+            {% if session.role == 'admin' %}
+            <div class="w-100 w-md-auto">
+                <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" class="btn btn-secondary btn-sm w-100 w-md-auto">
+                    <i class="fas fa-edit"></i> แก้ไขข้อมูลเครื่องจักรนี้
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 {% if is_pm_due %}
@@ -23,7 +34,7 @@
         {% if asset.asset_image_filename %}
             <img src="{{ url_for('uploaded_file', filename=asset.asset_image_filename) }}" alt="รูปภาพของ {{ asset.name }}" class="img-fluid rounded shadow-sm">
         {% else %}
-            <div class="d-flex align-items-center justify-content-center bg-light rounded shadow-sm text-muted" style="height: 250px;">
+            <div class="d-flex align-items-center justify-content-center bg-light rounded shadow-sm text-muted asset-image-placeholder">
                 <span>ไม่มีรูปภาพ</span>
             </div>
         {% endif %}
@@ -44,14 +55,195 @@
         </div>
     </div>
 </div>
+
+<!-- Maintenance Points Section -->
+<div class="row gx-4 mt-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>จุดที่ต้องบำรุงรักษา (Maintenance Points)</h4>
+            {% if session.role == 'admin' %}
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMaintenancePointModal">
+                เพิ่มจุดบำรุงรักษา
+            </button>
+            {% endif %}
+        </div>
+        
+        {% if maintenance_points %}
+        <div class="row">
+            {% for point in maintenance_points %}
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ point.point_name }}</h6>
+                        <span class="badge bg-{% if point.status == 'active' %}success{% elif point.status == 'inactive' %}secondary{% else %}primary{% endif %}">
+                            {{ point.status }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        {% if point.description %}
+                        <p class="card-text"><strong>คำอธิบาย:</strong> {{ point.description }}</p>
+                        {% endif %}
+                        {% if point.maintenance_procedure %}
+                        <p class="card-text"><strong>ขั้นตอนการบำรุงรักษา:</strong> {{ point.maintenance_procedure }}</p>
+                        {% endif %}
+                        {% if point.frequency_days %}
+                        <p class="card-text"><strong>ความถี่:</strong> ทุกๆ {{ point.frequency_days }} วัน</p>
+                        {% endif %}
+                        {% if point.next_check_date %}
+                        <p class="card-text"><strong>ตรวจครั้งถัดไป:</strong> {{ point.next_check_date }}</p>
+                        {% endif %}
+                        
+                        <!-- รูปภาพของจุดบำรุงรักษา -->
+                        {% if point.images %}
+                        <div class="mb-3">
+                            <strong>รูปภาพ:</strong>
+                            <div class="row mt-2">
+                                {% for image in point.images %}
+                                <div class="col-4 mb-2">
+                                    <div class="point-image-container">
+                                        <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" 
+                                             alt="{{ image.image_description or 'รูปภาพจุดบำรุงรักษา' }}" 
+                                             class="img-fluid rounded shadow-sm maintenance-point-image" 
+                                             data-bs-toggle="modal" 
+                                             data-bs-target="#imageModal{{ image.id }}">
+                                        <span class="badge bg-secondary point-image-overlay maintenance-point-badge">
+                                            {{ image.image_type }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Image Modal -->
+                                    <div class="modal fade" id="imageModal{{ image.id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">{{ image.image_description or 'รูปภาพจุดบำรุงรักษา' }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
+                                                </div>
+                                                <div class="modal-body text-center">
+                                                    <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" 
+                                                         alt="{{ image.image_description or 'รูปภาพจุดบำรุงรักษา' }}" 
+                                                         class="img-fluid">
+                                                    {% if image.image_description %}
+                                                    <p class="mt-3 text-muted">{{ image.image_description }}</p>
+                                                    {% endif %}
+                                                    <p class="text-muted">
+                                                        <small>อัปโหลดโดย: {{ image.uploaded_by_name or 'ไม่ระบุ' }} | 
+                                                        วันที่: {{ image.upload_date.split(' ')[0] }} | 
+                                                        ประเภท: {{ image.image_type }}</small>
+                                                    </p>
+                                                </div>
+                                                {% if session.role == 'admin' %}
+                                                <div class="modal-footer">
+                                                    <form action="{{ url_for('delete_point_image', image_id=image.id) }}" method="post" class="d-inline">
+                                                        <button type="submit" class="btn btn-danger btn-sm" 
+                                                                onclick="return confirm('ต้องการลบรูปภาพนี้หรือไม่?')">ลบรูปภาพ</button>
+                                                    </form>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Upload Image Form -->
+                        <form action="{{ url_for('upload_point_image', point_id=point.id) }}" method="post" enctype="multipart/form-data" class="mb-2">
+                            <div class="input-group input-group-sm">
+                                <input type="file" name="image" accept="image/*" class="form-control" title="เลือกไฟล์รูปภาพ" required>
+                                <select name="image_type" class="form-select image-type-select" title="เลือกประเภทรูปภาพ">
+                                    <option value="reference">อ้างอิง</option>
+                                    <option value="before">ก่อนซ่อม</option>
+                                    <option value="after">หลังซ่อม</option>
+                                    <option value="issue">ปัญหา</option>
+                                </select>
+                                <button type="submit" class="btn btn-outline-primary">อัปโหลด</button>
+                            </div>
+                            <input type="text" name="description" placeholder="คำอธิบายรูปภาพ (ไม่บังคับ)" class="form-control form-control-sm mt-1">
+                        </form>
+                        
+                        <p class="card-text">
+                            <small class="text-muted">สร้างโดย: {{ point.created_by_name or 'ไม่ระบุ' }} | 
+                            วันที่: {{ point.created_at.split(' ')[0] }}</small>
+                        </p>
+                    </div>
+                    {% if session.role == 'admin' %}
+                    <div class="card-footer">
+                        <a href="{{ url_for('edit_maintenance_point', point_id=point.id) }}" class="btn btn-outline-secondary btn-sm">แก้ไข</a>
+                        <form action="{{ url_for('delete_maintenance_point', point_id=point.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                    onclick="return confirm('ต้องการลบจุดบำรุงรักษานี้หรือไม่?')">ลบ</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> ยังไม่มีจุดบำรุงรักษาที่กำหนดไว้
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Maintenance Point Modal -->
+{% if session.role == 'admin' %}
+<div class="modal fade" id="addMaintenancePointModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">เพิ่มจุดบำรุงรักษาใหม่</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
+            </div>
+            <form action="{{ url_for('add_maintenance_point', asset_id=asset.id) }}" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="mp_point_name" class="form-label">ชื่อจุดบำรุงรักษา *</label>
+                        <input type="text" id="mp_point_name" name="point_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mp_description" class="form-label">คำอธิบาย</label>
+                        <textarea id="mp_description" name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mp_maintenance_procedure" class="form-label">ขั้นตอนการบำรุงรักษา</label>
+                        <textarea id="mp_maintenance_procedure" name="maintenance_procedure" class="form-control" rows="4"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mp_frequency_days" class="form-label">ความถี่ (วัน)</label>
+                        <input type="number" id="mp_frequency_days" name="frequency_days" class="form-control" min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="mp_point_images" class="form-label">รูปภาพ (สามารถเลือกหลายไฟล์)</label>
+                        <input type="file" id="mp_point_images" name="point_images" class="form-control" accept="image/*" multiple>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mp_image_description" class="form-label">คำอธิบายรูปภาพ</label>
+                        <input type="text" id="mp_image_description" name="image_description" class="form-control" placeholder="คำอธิบายสำหรับรูปภาพที่อัปโหลด">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success">เพิ่มจุดบำรุงรักษา</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row gx-4 mt-5">
     <div class="col-md-5">
         <h4>เพิ่มประวัติการซ่อมบำรุง</h4>
         <div class="card">
             <div class="card-body">
                 <form action="{{ url_for('add_maintenance', asset_id=asset.id) }}" method="post">
-                    <div class="mb-3"><label for="description" class="form-label">รายละเอียดการซ่อม:</label><input type="text" id="description" name="description" class="form-control" required></div>
-                    <div class="mb-3"><label for="cost" class="form-label">ค่าใช้จ่าย (บาท):</label><input type="number" id="cost" name="cost" class="form-control" step="0.01"></div>
+                    <div class="mb-3"><label for="maint_description" class="form-label">รายละเอียดการซ่อม:</label><input type="text" id="maint_description" name="description" class="form-control" required></div>
+                    <div class="mb-3"><label for="maint_cost" class="form-label">ค่าใช้จ่าย (บาท):</label><input type="number" id="maint_cost" name="cost" class="form-control" step="0.01"></div>
                     <button type="submit" class="btn btn-primary">บันทึกประวัติ</button>
                 </form>
             </div>

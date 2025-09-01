@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ part.part_name }} - รายละเอียดอะไหล่{% endblock %}
+
+{% block content %}
+<!-- Enhanced Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card glassmorphism border-0">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                    <!-- Page Title with Status Indicator -->
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-cog me-2 text-primary fs-4"></i>
+                            <h1 class="mb-0 gradient-text">{{ part.part_name }}</h1>
+                            {% if part.current_stock <= 0 %}
+                                <span class="badge bg-danger ms-3 animate-pulse">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>หมดสต็อก
+                                </span>
+                            {% elif part.current_stock <= part.minimum_stock %}
+                                <span class="badge bg-warning ms-3 animate-pulse">
+                                    <i class="fas fa-exclamation-circle me-1"></i>สต็อกต่ำ
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success ms-3">
+                                    <i class="fas fa-check-circle me-1"></i>พร้อมใช้งาน
+                                </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-0">
+                            <span class="technical-data">{{ part.part_number }}</span>
+                            {% if part.category %}
+                                <span class="mx-2">•</span>
+                                <span class="badge bg-secondary">{{ part.category }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- Enhanced Action Buttons -->
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        {% if session.role == 'admin' %}
+                        <a href="{{ url_for('edit_part', part_id=part.id) }}" class="btn btn-primary btn-sm hover-lift" data-bs-toggle="tooltip" title="แก้ไขข้อมูลอะไหล่">
+                            <i class="fas fa-edit me-1"></i>แก้ไขข้อมูล
+                        </a>
+                        <button type="button" class="btn btn-success btn-sm hover-lift" data-bs-toggle="modal" data-bs-target="#stockModal" data-bs-toggle="tooltip" title="ปรับปรุงสต็อก">
+                            <i class="fas fa-boxes me-1"></i>ปรับสต็อก
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('parts_index') }}" class="btn btn-outline-secondary btn-sm hover-lift">
+                            <i class="fas fa-arrow-left me-1"></i>กลับไปรายการ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Stock Status Alert -->
+{% if part.current_stock <= 0 %}
+<div class="alert alert-danger border-0 rounded-lg animate-fade-in-up">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1">หมดสต็อก!</h5>
+            <p class="mb-0">อะไหล่นี้ไม่มีในคลัง กรุณาสั่งซื้อเพิ่มเติม</p>
+        </div>
+    </div>
+</div>
+{% elif part.current_stock <= part.minimum_stock %}
+<div class="alert alert-warning border-0 rounded-lg animate-fade-in-up">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1">สต็อกต่ำ!</h5>
+            <p class="mb-0">
+                ปัจจุบันเหลือ <strong>{{ part.current_stock }}</strong> ชิ้น 
+                (ขั้นต่ำ {{ part.minimum_stock }} ชิ้น)
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Enhanced Content Layout -->
+<div class="row g-4">
+    <!-- Main Information Card -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header bg-gradient text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <h5 class="mb-0">ข้อมูลอะไหล่</h5>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <!-- Left Column -->
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-barcode me-2 text-primary"></i>รหัสอะไหล่
+                                </label>
+                                <div class="info-value">
+                                    <span class="technical-data">{{ part.part_number }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-tag me-2 text-primary"></i>ชื่ออะไหล่
+                                </label>
+                                <div class="info-value">{{ part.part_name }}</div>
+                            </div>
+                            
+                            {% if part.category %}
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-folder me-2 text-primary"></i>หมวดหมู่
+                                </label>
+                                <div class="info-value">
+                                    <span class="badge bg-secondary">{{ part.category }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if part.manufacturer %}
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-industry me-2 text-primary"></i>ผู้ผลิต
+                                </label>
+                                <div class="info-value">{{ part.manufacturer }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if part.location %}
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>ตำแหน่งจัดเก็บ
+                                </label>
+                                <div class="info-value">
+                                    <span class="badge bg-info">{{ part.location }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column -->
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            {% if part.unit_price %}
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-coins me-2 text-warning"></i>ราคา/หน่วย
+                                </label>
+                                <div class="info-value">
+                                    <span class="text-success fw-bold">฿{{ "%.2f"|format(part.unit_price) }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if part.supplier %}
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-truck me-2 text-primary"></i>ซัพพลายเออร์
+                                </label>
+                                <div class="info-value">{{ part.supplier }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if part.supplier_contact %}
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-phone me-2 text-primary"></i>ติดต่อ
+                                </label>
+                                <div class="info-value">
+                                    <a href="tel:{{ part.supplier_contact }}" class="text-decoration-none">
+                                        {{ part.supplier_contact }}
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-calendar-plus me-2 text-muted"></i>สร้างเมื่อ
+                                </label>
+                                <div class="info-value">{{ part.created_at.split(' ')[0] }}</div>
+                            </div>
+                            
+                            <div class="info-item">
+                                <label class="info-label">
+                                    <i class="fas fa-calendar-check me-2 text-muted"></i>อัปเดตล่าสุด
+                                </label>
+                                <div class="info-value">{{ part.updated_at.split(' ')[0] if part.updated_at else 'ไม่มี' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Description and Notes -->
+                {% if part.description or part.notes %}
+                <hr class="my-4">
+                <div class="row">
+                    {% if part.description %}
+                    <div class="col-md-6">
+                        <div class="description-box">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-file-alt me-2"></i>คำอธิบาย
+                            </h6>
+                            <p class="text-muted">{{ part.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if part.notes %}
+                    <div class="col-md-6">
+                        <div class="notes-box">
+                            <h6 class="text-warning mb-3">
+                                <i class="fas fa-sticky-note me-2"></i>หมายเหตุ
+                            </h6>
+                            <p class="text-muted">{{ part.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+            </div>
+        </div>
+        
+        <!-- Transaction History -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">ประวัติการเคลื่อนไหวสต็อก</h5>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>วันที่</th>
+                                <th>ประเภท</th>
+                                <th>จำนวน</th>
+                                <th>ราคา/หน่วย</th>
+                                <th>หมายเหตุ</th>
+                                <th>ผู้ดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trans in transactions %}
+                            <tr>
+                                <td>{{ trans.transaction_date.split(' ')[0] }}</td>
+                                <td>
+                                    {% if trans.transaction_type == 'in' %}
+                                    <span class="badge bg-success">รับเข้า</span>
+                                    {% elif trans.transaction_type == 'out' %}
+                                    <span class="badge bg-danger">เบิกออก</span>
+                                    {% else %}
+                                    <span class="badge bg-info">ปรับปรุง</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if trans.transaction_type == 'in' %}
+                                    <span class="text-success">+{{ trans.quantity }}</span>
+                                    {% elif trans.transaction_type == 'out' %}
+                                    <span class="text-danger">-{{ trans.quantity }}</span>
+                                    {% else %}
+                                    <span class="text-info">{{ trans.quantity }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if trans.unit_cost %}
+                                    ฿{{ "%.2f"|format(trans.unit_cost) }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ trans.notes or '-' }}</td>
+                                <td>{{ trans.created_by_name or 'ระบบ' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-2x text-muted"></i>
+                    <p class="text-muted mt-2">ยังไม่มีประวัติการเคลื่อนไหว</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock Information Sidebar -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">สถานะสต็อก</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <h1 class="display-4 mb-0 {% if part.current_stock <= 0 %}text-danger{% elif part.current_stock <= part.minimum_stock %}text-warning{% else %}text-success{% endif %}">
+                        {{ part.current_stock }}
+                    </h1>
+                    <p class="text-muted">ชิ้นในสต็อก</p>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="mb-0">{{ part.minimum_stock }}</h5>
+                            <small class="text-muted">ขั้นต่ำ</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="mb-0">
+                            {% if part.unit_price %}
+                            ฿{{ "%.0f"|format(part.current_stock * part.unit_price) }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </h5>
+                        <small class="text-muted">มูลค่ารวม</small>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    {% if part.current_stock <= 0 %}
+                    <span class="status-indicator danger"></span> หมดสต็อก
+                    {% elif part.current_stock <= part.minimum_stock %}
+                    <span class="status-indicator warning"></span> สต็อกต่ำ
+                    {% else %}
+                    <span class="status-indicator active"></span> พร้อมใช้งาน
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if session.role == 'admin' %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">การจัดการ</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#stockModal">
+                        <i class="fas fa-boxes"></i> ปรับสต็อก
+                    </button>
+                    <a href="{{ url_for('edit_part', part_id=part.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-edit"></i> แก้ไขข้อมูล
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="fas fa-trash"></i> ลบอะไหล่
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stock Adjustment Modal -->
+{% if session.role == 'admin' %}
+<div class="modal fade" id="stockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ปรับสต็อก: {{ part.part_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
+            </div>
+            <form action="{{ url_for('adjust_stock', part_id=part.id) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">สต็อกปัจจุบัน: <strong>{{ part.current_stock }}</strong></label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transaction_type" class="form-label">ประเภทการดำเนินการ</label>
+                        <select id="transaction_type" name="transaction_type" class="form-select" required>
+                            <option value="in">เพิ่มสต็อก (รับเข้า)</option>
+                            <option value="out">ลดสต็อก (เบิกออก)</option>
+                            <option value="adjustment">ปรับปรุงสต็อก (ตั้งค่าใหม่)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">จำนวน</label>
+                        <input type="number" id="quantity" name="quantity" class="form-control" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="unit_cost" class="form-label">ราคา/หน่วย (ไม่บังคับ)</label>
+                        <input type="number" id="unit_cost" name="unit_cost" class="form-control" step="0.01" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">หมายเหตุ</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ยืนยันการลบ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
+            </div>
+            <div class="modal-body">
+                <p>ต้องการลบอะไหล่ <strong>{{ part.part_name }}</strong> หรือไม่?</p>
+                <p class="text-muted">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <form action="{{ url_for('delete_part', part_id=part.id) }}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger">ลบอะไหล่</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
