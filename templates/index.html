@@ -303,6 +303,12 @@
                                            title="แก้ไข">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm hover-lift" 
+                                                title="ลบ"
+                                                onclick="confirmDelete('{{ asset.name }}', {{ asset.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -472,5 +478,17 @@ setTimeout(function() {
         }
     });
 }, 5000);
+
+// Delete confirmation function
+function confirmDelete(assetName, assetId) {
+    if (confirm('คุณแน่ใจหรือไม่ที่จะลบเครื่องจักร "' + assetName + '" และข้อมูลที่เกี่ยวข้องทั้งหมด?\n\nการลบนี้ไม่สามารถยกเลิกได้!')) {
+        // Create a form and submit it
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/delete_asset/' + assetId;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 {% endblock %}
