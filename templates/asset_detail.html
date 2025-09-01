@@ -199,31 +199,33 @@
                 <h5 class="modal-title">เพิ่มจุดบำรุงรักษาใหม่</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" title="ปิด"></button>
             </div>
-            <form action="{{ url_for('add_maintenance_point', asset_id=asset.id) }}" method="post" enctype="multipart/form-data">
+            <form action="{{ url_for('add_maintenance_point', asset_id=asset.id) }}" method="post" onsubmit="
+                console.log('Form submitting...');
+                const submitBtn = this.querySelector('button[type=submit]');
+                if (submitBtn.disabled) {
+                    console.log('Form already submitting, preventing duplicate');
+                    return false;
+                }
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'กำลังเพิ่ม...';
+                return confirm('ต้องการเพิ่มจุดบำรุงรักษานี้หรือไม่?');
+            ">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="mp_point_name" class="form-label">ชื่อจุดบำรุงรักษา *</label>
-                        <input type="text" id="mp_point_name" name="point_name" class="form-control" required>
+                        <label for="mp_point_name" class="form-label">ชื่อจุดบำรุงรักษา * (ต้องกรอก)</label>
+                        <input type="text" id="mp_point_name" name="point_name" class="form-control" required placeholder="กรุณากรอกชื่อจุดบำรุงรักษา">
                     </div>
                     <div class="mb-3">
                         <label for="mp_description" class="form-label">คำอธิบาย</label>
-                        <textarea id="mp_description" name="description" class="form-control" rows="3"></textarea>
+                        <textarea id="mp_description" name="description" class="form-control" rows="3" placeholder="คำอธิบายเพิ่มเติม (ไม่บังคับ)"></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="mp_maintenance_procedure" class="form-label">ขั้นตอนการบำรุงรักษา</label>
-                        <textarea id="mp_maintenance_procedure" name="maintenance_procedure" class="form-control" rows="4"></textarea>
+                        <textarea id="mp_maintenance_procedure" name="maintenance_procedure" class="form-control" rows="4" placeholder="ขั้นตอนการบำรุงรักษา (ไม่บังคับ)"></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="mp_frequency_days" class="form-label">ความถี่ (วัน)</label>
-                        <input type="number" id="mp_frequency_days" name="frequency_days" class="form-control" min="1">
-                    </div>
-                    <div class="mb-3">
-                        <label for="mp_point_images" class="form-label">รูปภาพ (สามารถเลือกหลายไฟล์)</label>
-                        <input type="file" id="mp_point_images" name="point_images" class="form-control" accept="image/*" multiple>
-                    </div>
-                    <div class="mb-3">
-                        <label for="mp_image_description" class="form-label">คำอธิบายรูปภาพ</label>
-                        <input type="text" id="mp_image_description" name="image_description" class="form-control" placeholder="คำอธิบายสำหรับรูปภาพที่อัปโหลด">
+                        <input type="number" id="mp_frequency_days" name="frequency_days" class="form-control" min="1" placeholder="จำนวนวัน">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -268,4 +270,40 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Asset detail page loaded');
+    
+    // Check if modal exists
+    const modal = document.getElementById('addMaintenancePointModal');
+    console.log('Modal found:', modal ? 'YES' : 'NO');
+    
+    // Check if form exists
+    const form = document.querySelector('form[action*="add_maintenance_point"]');
+    console.log('Form found:', form ? 'YES' : 'NO');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submission started');
+            const formData = new FormData(form);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key + ':', value);
+            }
+        });
+    }
+    
+    // Check if button exists
+    const button = document.querySelector('[data-bs-target="#addMaintenancePointModal"]');
+    console.log('Modal button found:', button ? 'YES' : 'NO');
+    
+    if (button) {
+        button.addEventListener('click', function() {
+            console.log('Modal button clicked');
+        });
+    }
+});
+</script>
+
 {% endblock %}

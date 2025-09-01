@@ -700,36 +700,44 @@ def add_maintenance(asset_id):
 @login_required
 @admin_required
 def add_maintenance_point(asset_id):
-    print(f"DEBUG: add_maintenance_point called for asset_id={asset_id}")
-    print(f"DEBUG: Form data: {dict(request.form)}")
-    print(f"DEBUG: User session: {dict(session)}")
-    
-    point_name = request.form['point_name']
-    description = request.form.get('description', '')
-    maintenance_procedure = request.form.get('maintenance_procedure', '')
-    frequency_days = request.form.get('frequency_days')
-    frequency_days = int(frequency_days) if frequency_days else None
-    
-    db = get_db()
-    cursor = db.execute("""
-        INSERT INTO maintenance_points 
-        (asset_id, point_name, description, maintenance_procedure, frequency_days, created_by) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (asset_id, point_name, description, maintenance_procedure, frequency_days, session['user_id']))
-    
-    maintenance_point_id = cursor.lastrowid
-    
-    # จัดการไฟล์รูปภาพที่อัปโหลด
-    if 'point_images' in request.files:
-        files = request.files.getlist('point_images')
-        for file in files:
-            if file and file.filename != '':
-                save_maintenance_point_image(file, maintenance_point_id, 
-                                           request.form.get('image_description', ''), 'reference')
-    
-    db.commit()
-    flash(f'เพิ่มจุดบำรุงรักษา "{point_name}" เรียบร้อยแล้ว', 'success')
-    return redirect(url_for('asset_detail', asset_id=asset_id))
+    try:
+        print(f"DEBUG: add_maintenance_point called for asset_id={asset_id}")
+        print(f"DEBUG: Form data: {dict(request.form)}")
+        print(f"DEBUG: User session: {dict(session)}")
+        
+        point_name = request.form['point_name']
+        description = request.form.get('description', '')
+        maintenance_procedure = request.form.get('maintenance_procedure', '')
+        frequency_days = request.form.get('frequency_days')
+        frequency_days = int(frequency_days) if frequency_days else None
+        
+        db = get_db()
+        cursor = db.execute("""
+            INSERT INTO maintenance_points 
+            (asset_id, point_name, description, maintenance_procedure, frequency_days, created_by) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (asset_id, point_name, description, maintenance_procedure, frequency_days, session['user_id']))
+        
+        maintenance_point_id = cursor.lastrowid
+        print(f"DEBUG: Created maintenance point with ID: {maintenance_point_id}")
+        
+        # จัดการไฟล์รูปภาพที่อัปโหลด (ถ้ามี)
+        if 'point_images' in request.files:
+            files = request.files.getlist('point_images')
+            for file in files:
+                if file and file.filename != '':
+                    save_maintenance_point_image(file, maintenance_point_id, 
+                                               request.form.get('image_description', ''), 'reference')
+        
+        db.commit()
+        print(f"DEBUG: Successfully committed to database")
+        flash(f'เพิ่มจุดบำรุงรักษา "{point_name}" เรียบร้อยแล้ว', 'success')
+        return redirect(url_for('asset_detail', asset_id=asset_id))
+        
+    except Exception as e:
+        print(f"DEBUG: Error in add_maintenance_point: {str(e)}")
+        flash(f'เกิดข้อผิดพลาด: {str(e)}', 'error')
+        return redirect(url_for('asset_detail', asset_id=asset_id))
 
 @app.route('/edit_maintenance_point/<int:point_id>', methods=['GET', 'POST'])
 @login_required
