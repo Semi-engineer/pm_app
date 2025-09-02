@@ -35,3 +35,16 @@ CREATE TABLE maintenance_history (
     cost REAL,
     FOREIGN KEY (asset_id) REFERENCES assets (id)
 );
+
+-- สร้างตารางสำหรับจุดรายละเอียดการบำรุงรักษา
+CREATE TABLE maintenance_detail_points (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    asset_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    location_detail TEXT,
+    image_filename TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (asset_id) REFERENCES assets (id)
+);

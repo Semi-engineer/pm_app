@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">แก้ไขจุดรายละเอียดการบำรุงรักษา</h2>
+    <a href="{{ url_for('asset_detail', asset_id=point.asset_id) }}" class="btn btn-secondary">กลับไปยังรายละเอียดเครื่องจักร</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header fw-bold">แก้ไขข้อมูลจุดรายละเอียด</div>
+            <div class="card-body">
+                <form action="{{ url_for('edit_detail_point', point_id=point.id) }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">หัวข้อ *</label>
+                        <input type="text" id="title" name="title" class="form-control" value="{{ point.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location_detail" class="form-label">ตำแหน่งรายละเอียด</label>
+                        <input type="text" id="location_detail" name="location_detail" class="form-control" value="{{ point.location_detail or '' }}" placeholder="เช่น ด้านซ้าย, ข้างใน, ชั้นบน">
+                    </div>
+                    <div class="mb-3">
+                        <label for="point_description" class="form-label">รายละเอียด</label>
+                        <textarea id="point_description" name="description" class="form-control" rows="4">{{ point.description or '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="point_image" class="form-label">รูปภาพ</label>
+                        {% if point.image_filename %}
+                        <div class="mb-2">
+                            <small class="text-muted">รูปภาพปัจจุบัน:</small><br>
+                            <img src="{{ url_for('uploaded_file', filename=point.image_filename) }}" alt="{{ point.title }}" class="img-thumbnail detail-point-thumbnail">
+                        </div>
+                        {% endif %}
+                        <input type="file" id="point_image" name="point_image" class="form-control" accept="image/*">
+                        <div class="form-text">รองรับไฟล์: PNG, JPG, JPEG, GIF (เลือกไฟล์ใหม่เพื่อเปลี่ยนรูปภาพ)</div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('asset_detail', asset_id=point.asset_id) }}" class="btn btn-secondary">ยกเลิก</a>
+                        <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header fw-bold">ข้อมูลเพิ่มเติม</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">สร้างเมื่อ</dt>
+                    <dd class="col-sm-7">{{ point.created_at.split(' ')[0] }}</dd>
+                    {% if point.updated_at != point.created_at %}
+                    <dt class="col-sm-5">แก้ไขล่าสุด</dt>
+                    <dd class="col-sm-7">{{ point.updated_at.split(' ')[0] }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

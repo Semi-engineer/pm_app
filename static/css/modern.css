@@ -455,3 +455,26 @@ header div[class*="text-end"] .btn:active {
 .d-none {
     display: none;
 }
+
+/* --- Detail Points Styles --- */
+.detail-point-card-img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.detail-point-placeholder {
+    height: 200px;
+}
+
+.detail-point-thumbnail {
+    max-height: 150px;
+}
+
+/* --- Asset Detail Styles --- */
+.hidden-by-default {
+    display: none;
+}
+
+.asset-image-placeholder {
+    height: 250px;
+}

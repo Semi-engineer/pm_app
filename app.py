@@ -302,14 +302,9 @@ def my_tasks():
 @app.route('/asset/<int:asset_id>')
 @login_required
 def asset_detail(asset_id):
-    db = get_db()
-    asset_row = db.execute('SELECT a.*, u.username as technician_name FROM assets a LEFT JOIN users u ON a.technician_id = u.id WHERE a.id = ?', (asset_id,)).fetchone()
-    if not asset_row: return "Asset not found", 404
-    asset = dict(asset_row)
-    asset['custom_data'] = json.loads(asset['custom_data'])
-    is_pm_due = bool(asset.get('next_pm_date') and asset['next_pm_date'] != '' and date.fromisoformat(asset['next_pm_date']) <= date.today())
-    history = db.execute('SELECT * FROM maintenance_history WHERE asset_id = ? ORDER BY date DESC', (asset_id,)).fetchall()
-    return render_template('asset_detail.html', asset=asset, history=history, is_pm_due=is_pm_due)
+    # For JavaScript-based version, we just need to render the template
+    # The JavaScript will handle loading all the data via API calls
+    return render_template('asset_detail.html', asset={'id': asset_id})
 
 @app.route('/delete_asset/<int:asset_id>', methods=['POST'])
 @login_required
@@ -319,13 +314,25 @@ def delete_asset(asset_id):
     asset = db.execute('SELECT name, asset_image_filename FROM assets WHERE id = ?', (asset_id,)).fetchone()
     if asset:
         asset_name = asset['name']
-        # --- Delete associated image file ---
+        
+        # Delete associated detail point images
+        detail_points = db.execute('SELECT image_filename FROM maintenance_detail_points WHERE asset_id = ?', (asset_id,)).fetchall()
+        for point in detail_points:
+            if point['image_filename']:
+                try:
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], point['image_filename']))
+                except OSError as e:
+                    print(f"Error deleting detail point file {point['image_filename']}: {e}")
+        
+        # Delete associated asset image file
         if asset['asset_image_filename']:
             try:
                 os.remove(os.path.join(app.config['UPLOAD_FOLDER'], asset['asset_image_filename']))
             except OSError as e:
                 print(f"Error deleting file {asset['asset_image_filename']}: {e}")
         
+        # Delete related records
+        db.execute('DELETE FROM maintenance_detail_points WHERE asset_id = ?', (asset_id,))
         db.execute('DELETE FROM maintenance_history WHERE asset_id = ?', (asset_id,))
         db.execute('DELETE FROM assets WHERE id = ?', (asset_id,))
         db.commit()
@@ -361,6 +368,94 @@ def add_maintenance(asset_id):
     db.commit()
     flash('เพิ่มประวัติการซ่อมบำรุงเรียบร้อยแล้ว', 'success')
     return redirect(url_for('asset_detail', asset_id=asset_id))
+
+# --- Detail Points Routes ---
+@app.route('/add_detail_point/<int:asset_id>', methods=['POST'])
+@login_required
+def add_detail_point(asset_id):
+    title = request.form['title']
+    description = request.form.get('description', '')
+    location_detail = request.form.get('location_detail', '')
+    
+    # Handle image upload
+    image_filename = None
+    if 'point_image' in request.files:
+        file = request.files['point_image']
+        if file and file.filename != '' and allowed_file(file.filename):
+            image_filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+    
+    db = get_db()
+    db.execute(
+        'INSERT INTO maintenance_detail_points (asset_id, title, description, location_detail, image_filename) VALUES (?, ?, ?, ?, ?)',
+        (asset_id, title, description, location_detail, image_filename)
+    )
+    db.commit()
+    flash('เพิ่มจุดรายละเอียดเรียบร้อยแล้ว', 'success')
+    return redirect(url_for('asset_detail', asset_id=asset_id))
+
+@app.route('/edit_detail_point/<int:point_id>', methods=('GET', 'POST'))
+@login_required
+def edit_detail_point(point_id):
+    db = get_db()
+    point = db.execute('SELECT * FROM maintenance_detail_points WHERE id = ?', (point_id,)).fetchone()
+    
+    if not point:
+        flash('ไม่พบจุดรายละเอียดที่ต้องการแก้ไข', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form.get('description', '')
+        location_detail = request.form.get('location_detail', '')
+        
+        # Handle image upload
+        image_filename = point['image_filename']  # Keep existing image
+        if 'point_image' in request.files:
+            file = request.files['point_image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                # Delete old image if exists
+                if image_filename:
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+                    except OSError:
+                        pass
+                
+                image_filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+        
+        db.execute(
+            'UPDATE maintenance_detail_points SET title = ?, description = ?, location_detail = ?, image_filename = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            (title, description, location_detail, image_filename, point_id)
+        )
+        db.commit()
+        flash('อัปเดตจุดรายละเอียดเรียบร้อยแล้ว', 'success')
+        return redirect(url_for('asset_detail', asset_id=point['asset_id']))
+    
+    return render_template('edit_detail_point.html', point=point)
+
+@app.route('/delete_detail_point/<int:point_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_detail_point(point_id):
+    db = get_db()
+    point = db.execute('SELECT asset_id, image_filename FROM maintenance_detail_points WHERE id = ?', (point_id,)).fetchone()
+    
+    if point:
+        # Delete associated image file
+        if point['image_filename']:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], point['image_filename']))
+            except OSError as e:
+                print(f"Error deleting file {point['image_filename']}: {e}")
+        
+        db.execute('DELETE FROM maintenance_detail_points WHERE id = ?', (point_id,))
+        db.commit()
+        flash('ลบจุดรายละเอียดเรียบร้อยแล้ว', 'success')
+        return redirect(url_for('asset_detail', asset_id=point['asset_id']))
+    else:
+        flash('ไม่พบจุดรายละเอียดที่ต้องการลบ', 'error')
+        return redirect(url_for('index'))
     
 
 # --- Dashboard & API Routes (No Changes) ---
@@ -376,6 +471,170 @@ def pm_events_api():
     assets_with_pm = db.execute("SELECT id, name, next_pm_date FROM assets WHERE next_pm_date IS NOT NULL AND next_pm_date != ''").fetchall()
     events = [{'title': asset['name'], 'start': asset['next_pm_date'], 'url': url_for('asset_detail', asset_id=asset['id'])} for asset in assets_with_pm]
     return jsonify(events)
+
+# --- New API Endpoints for JavaScript-based frontend ---
+@app.route('/api/asset/<int:asset_id>')
+@login_required
+def get_asset_api(asset_id):
+    db = get_db()
+    asset_row = db.execute('SELECT a.*, u.username as technician_name FROM assets a LEFT JOIN users u ON a.technician_id = u.id WHERE a.id = ?', (asset_id,)).fetchone()
+    if not asset_row:
+        return jsonify({'error': 'Asset not found'}), 404
+    
+    asset = dict(asset_row)
+    asset['custom_data'] = json.loads(asset['custom_data'])
+    is_pm_due = bool(asset.get('next_pm_date') and asset['next_pm_date'] != '' and date.fromisoformat(asset['next_pm_date']) <= date.today())
+    
+    return jsonify({
+        'asset': asset,
+        'is_pm_due': is_pm_due,
+        'user_role': session.get('role')
+    })
+
+@app.route('/api/asset/<int:asset_id>/detail-points')
+@login_required
+def get_detail_points_api(asset_id):
+    db = get_db()
+    detail_points = db.execute('SELECT * FROM maintenance_detail_points WHERE asset_id = ? ORDER BY created_at DESC', (asset_id,)).fetchall()
+    return jsonify({
+        'detail_points': [dict(point) for point in detail_points],
+        'user_role': session.get('role')
+    })
+
+@app.route('/api/asset/<int:asset_id>/maintenance-history')
+@login_required
+def get_maintenance_history_api(asset_id):
+    db = get_db()
+    history = db.execute('SELECT * FROM maintenance_history WHERE asset_id = ? ORDER BY date DESC', (asset_id,)).fetchall()
+    return jsonify({
+        'history': [dict(item) for item in history]
+    })
+
+@app.route('/api/detail-point', methods=['POST'])
+@login_required
+def add_detail_point_api():
+    try:
+        asset_id = request.form.get('asset_id')
+        title = request.form.get('title')
+        description = request.form.get('description', '')
+        location_detail = request.form.get('location_detail', '')
+        
+        if not asset_id or not title:
+            return jsonify({'error': 'Asset ID and title are required'}), 400
+        
+        # Handle image upload
+        image_filename = None
+        if 'point_image' in request.files:
+            file = request.files['point_image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                image_filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+        
+        db = get_db()
+        cursor = db.execute(
+            'INSERT INTO maintenance_detail_points (asset_id, title, description, location_detail, image_filename) VALUES (?, ?, ?, ?, ?)',
+            (asset_id, title, description, location_detail, image_filename)
+        )
+        db.commit()
+        
+        # Get the created point
+        point = db.execute('SELECT * FROM maintenance_detail_points WHERE id = ?', (cursor.lastrowid,)).fetchone()
+        
+        return jsonify({
+            'success': True,
+            'message': 'เพิ่มจุดรายละเอียดเรียบร้อยแล้ว',
+            'point': dict(point)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/detail-point/<int:point_id>', methods=['PUT'])
+@login_required
+def update_detail_point_api(point_id):
+    try:
+        db = get_db()
+        point = db.execute('SELECT * FROM maintenance_detail_points WHERE id = ?', (point_id,)).fetchone()
+        
+        if not point:
+            return jsonify({'error': 'Detail point not found'}), 404
+        
+        data = request.get_json()
+        title = data.get('title', point['title'])
+        description = data.get('description', point['description'])
+        location_detail = data.get('location_detail', point['location_detail'])
+        
+        db.execute(
+            'UPDATE maintenance_detail_points SET title = ?, description = ?, location_detail = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            (title, description, location_detail, point_id)
+        )
+        db.commit()
+        
+        # Get updated point
+        updated_point = db.execute('SELECT * FROM maintenance_detail_points WHERE id = ?', (point_id,)).fetchone()
+        
+        return jsonify({
+            'success': True,
+            'message': 'อัปเดตจุดรายละเอียดเรียบร้อยแล้ว',
+            'point': dict(updated_point)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/detail-point/<int:point_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_detail_point_api(point_id):
+    try:
+        db = get_db()
+        point = db.execute('SELECT asset_id, image_filename FROM maintenance_detail_points WHERE id = ?', (point_id,)).fetchone()
+        
+        if not point:
+            return jsonify({'error': 'Detail point not found'}), 404
+        
+        # Delete associated image file
+        if point['image_filename']:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], point['image_filename']))
+            except OSError as e:
+                print(f"Error deleting file {point['image_filename']}: {e}")
+        
+        db.execute('DELETE FROM maintenance_detail_points WHERE id = ?', (point_id,))
+        db.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'ลบจุดรายละเอียดเรียบร้อยแล้ว'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/maintenance', methods=['POST'])
+@login_required
+def add_maintenance_api():
+    try:
+        data = request.get_json()
+        asset_id = data.get('asset_id')
+        description = data.get('description')
+        cost = data.get('cost')
+        
+        if not asset_id or not description:
+            return jsonify({'error': 'Asset ID and description are required'}), 400
+        
+        db = get_db()
+        cursor = db.execute('INSERT INTO maintenance_history (asset_id, description, cost) VALUES (?, ?, ?)', 
+                          (asset_id, description, cost))
+        db.commit()
+        
+        # Get the created maintenance record
+        maintenance = db.execute('SELECT * FROM maintenance_history WHERE id = ?', (cursor.lastrowid,)).fetchone()
+        
+        return jsonify({
+            'success': True,
+            'message': 'เพิ่มประวัติการซ่อมบำรุงเรียบร้อยแล้ว',
+            'maintenance': dict(maintenance)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/reports')
 @login_required

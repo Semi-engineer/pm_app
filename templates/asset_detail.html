@@ -1,57 +1,72 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">รายละเอียดเครื่องจักร: {{ asset.name }}</h2>
-    {% if session.role == 'admin' %}
-    <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" class="btn btn-secondary">แก้ไขข้อมูลเครื่องจักรนี้</a>
-    {% endif %}
+    <h2 class="mb-0" id="asset-title">กำลังโหลด...</h2>
+    <a href="#" id="edit-asset-btn" class="btn btn-secondary hidden-by-default">แก้ไขข้อมูลเครื่องจักรนี้</a>
 </div>
 
-{% if is_pm_due %}
-<div class="alert alert-info text-center" role="alert">
+<!-- PM Due Alert (hidden by default, shown by JavaScript) -->
+<div id="pm-due-alert" class="alert alert-info text-center hidden-by-default" role="alert">
     <h4 class="alert-heading">ถึงกำหนดบำรุงรักษา!</h4>
     <p>เครื่องจักรนี้ถึงกำหนดการบำรุงรักษาเชิงป้องกัน (PM) แล้ว</p>
     <hr>
-    <form action="{{ url_for('perform_pm', asset_id=asset.id) }}" method="post" class="d-inline">
+    <form action="#" method="post" class="d-inline">
         <button type="submit" class="btn btn-success">ยืนยันการทำ PM และเลื่อนกำหนดการ</button>
     </form>
 </div>
-{% endif %}
 
 <div class="row">
     <div class="col-md-4">
-        {% if asset.asset_image_filename %}
-            <img src="{{ url_for('uploaded_file', filename=asset.asset_image_filename) }}" alt="รูปภาพของ {{ asset.name }}" class="img-fluid rounded shadow-sm">
-        {% else %}
-            <div class="d-flex align-items-center justify-content-center bg-light rounded shadow-sm text-muted" style="height: 250px;">
-                <span>ไม่มีรูปภาพ</span>
+        <div id="asset-image">
+            <div class="d-flex align-items-center justify-content-center bg-light rounded shadow-sm text-muted asset-image-placeholder">
+                <span>กำลังโหลด...</span>
             </div>
-        {% endif %}
+        </div>
     </div>
     <div class="col-md-8">
         <div class="card">
             <div class="card-header fw-bold">ข้อมูลทั่วไปและข้อมูลเพิ่มเติม</div>
             <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">ชื่อ</dt><dd class="col-sm-8">{{ asset.name }}</dd>
-                    <dt class="col-sm-4">แผนก</dt><dd class="col-sm-8">{{ asset.location }}</dd>
-                    {% if asset.technician_name %}<dt class="col-sm-4">ผู้รับผิดชอบ</dt><dd class="col-sm-8">{{ asset.technician_name }}</dd>{% endif %}
-                    {% if asset.next_pm_date %}<dt class="col-sm-4">PM ครั้งถัดไป</dt><dd class="col-sm-8">{{ asset.next_pm_date }}</dd>{% endif %}
-                    {% if asset.pm_frequency_days %}<dt class="col-sm-4">ความถี่ PM</dt><dd class="col-sm-8">ทุกๆ {{ asset.pm_frequency_days }} วัน</dd>{% endif %}
-                    {% for key, value in asset.custom_data.items() %}<dt class="col-sm-4">{{ key }}</dt><dd class="col-sm-8">{{ value }}</dd>{% endfor %}
+                <dl class="row mb-0" id="asset-details">
+                    <dt class="col-sm-4">กำลังโหลด...</dt><dd class="col-sm-8"></dd>
                 </dl>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Detail Points Section -->
+<div class="row gx-4 mt-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>จุดรายละเอียดการบำรุงรักษา</h4>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDetailPointModal">
+                เพิ่มจุดรายละเอียด
+            </button>
+        </div>
+        
+        <div id="detail-points-container">
+            <div class="text-center text-muted py-4">
+                <p>กำลังโหลด...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row gx-4 mt-5">
     <div class="col-md-5">
         <h4>เพิ่มประวัติการซ่อมบำรุง</h4>
         <div class="card">
             <div class="card-body">
-                <form action="{{ url_for('add_maintenance', asset_id=asset.id) }}" method="post">
-                    <div class="mb-3"><label for="description" class="form-label">รายละเอียดการซ่อม:</label><input type="text" id="description" name="description" class="form-control" required></div>
-                    <div class="mb-3"><label for="cost" class="form-label">ค่าใช้จ่าย (บาท):</label><input type="number" id="cost" name="cost" class="form-control" step="0.01"></div>
+                <form id="add-maintenance-form">
+                    <div class="mb-3">
+                        <label for="maintenance_description" class="form-label">รายละเอียดการซ่อม:</label>
+                        <input type="text" id="maintenance_description" name="description" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="maintenance_cost" class="form-label">ค่าใช้จ่าย (บาท):</label>
+                        <input type="number" id="maintenance_cost" name="cost" class="form-control" step="0.01">
+                    </div>
                     <button type="submit" class="btn btn-primary">บันทึกประวัติ</button>
                 </form>
             </div>
@@ -60,20 +75,64 @@
     <div class="col-md-7">
         <div class="d-flex justify-content-between align-items-center">
             <h4>ประวัติการซ่อมบำรุง</h4>
-            <a href="{{ url_for('export_asset_history', asset_id=asset.id) }}" class="btn btn-outline-success btn-sm">Export to CSV</a>
+            <a href="#" id="export-history-btn" class="btn btn-outline-success btn-sm">Export to CSV</a>
         </div>
         <div class="table-responsive mt-2">
             <table class="table table-striped table-hover">
-                <thead class="table-light"><tr><th>วันที่</th><th>รายละเอียด</th><th>ค่าใช้จ่าย</th></tr></thead>
-                <tbody>
-                    {% for item in history %}
-                    <tr><td>{{ item['date'].split(' ')[0] }}</td><td>{{ item['description'] }}</td><td>{{ '%.2f'|format(item['cost']) if item['cost'] is not none else 'N/A' }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="3" class="text-center text-muted">ยังไม่มีประวัติการซ่อม</td></tr>
-                    {% endfor %}
+                <thead class="table-light">
+                    <tr>
+                        <th>วันที่</th>
+                        <th>รายละเอียด</th>
+                        <th>ค่าใช้จ่าย</th>
+                    </tr>
+                </thead>
+                <tbody id="maintenance-history-tbody">
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">กำลังโหลด...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<!-- Add Detail Point Modal -->
+<div class="modal fade" id="addDetailPointModal" tabindex="-1" aria-labelledby="addDetailPointModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDetailPointModalLabel">เพิ่มจุดรายละเอียดการบำรุงรักษา</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="add-detail-point-form" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">หัวข้อ *</label>
+                        <input type="text" id="title" name="title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location_detail" class="form-label">ตำแหน่งรายละเอียด</label>
+                        <input type="text" id="location_detail" name="location_detail" class="form-control" placeholder="เช่น ด้านซ้าย, ข้างใน, ชั้นบน">
+                    </div>
+                    <div class="mb-3">
+                        <label for="point_description" class="form-label">รายละเอียด</label>
+                        <textarea id="point_description" name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="point_image" class="btn btn-secondary">เลือกไฟล์</label>
+                        <input type="file" id="point_image" name="point_image" accept="image/*" class="d-none">                  
+                        <span id="file-chosen" class="ms-3 text-muted">ยังไม่ได้เลือกไฟล์</span>
+                        <div class="form-text">รองรับไฟล์: PNG, JPG, JPEG, GIF</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/asset-detail.js') }}"></script>
 {% endblock %}
