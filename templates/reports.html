@@ -3,176 +3,118 @@
 {% block title %}รายงานสรุป - ระบบจัดการการบำรุงรักษา{% endblock %}
 
 {% block content %}
-<!-- Header Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card glassmorphism border-0">
-            <div class="card-body py-4">
-                <div class="d-flex align-items-center">
-                    <div class="icon-container me-3">
-                        <i class="fas fa-chart-line fa-2x text-primary"></i>
-                    </div>
-                    <div>
-                        <h2 class="mb-1 gradient-text">รายงานสรุป</h2>
-                        <p class="text-muted mb-0">ภาพรวมข้อมูลการบำรุงรักษาและค่าใช้จ่าย</p>
-                    </div>
-                </div>
-            </div>
+<!-- Pro Reports Hero -->
+<section class="reports-hero mb-4">
+    <div><i class="fas fa-chart-line fa-2x"></i></div>
+    <div>
+        <h2>รายงานสรุป</h2>
+        <p>ภาพรวมข้อมูลการบำรุงรักษาและค่าใช้จ่าย</p>
+    </div>
+    <div class="reports-toolbar reports-toolbar-floating">
+        <div class="filters">
+            <select id="rangeSelect" aria-label="ช่วงเวลา">
+                <option value="6">6 เดือน</option>
+                <option value="12" selected>12 เดือน</option>
+                <option value="24">24 เดือน</option>
+            </select>
+            <input type="date" id="startDate" aria-label="เริ่ม">
+            <input type="date" id="endDate" aria-label="สิ้นสุด">
         </div>
+        <div class="actions">
+            <button class="btn btn-outline-primary btn-icon" id="exportCSV"><i class="fas fa-file-csv"></i><span>CSV</span></button>
+            <button class="btn btn-outline-primary btn-icon" id="exportPNG"><i class="fas fa-image"></i><span>PNG</span></button>
+            <button class="btn btn-outline-primary btn-icon" id="refreshCharts" aria-label="รีเฟรช"><i class="fas fa-rotate"></i></button>
+        </div>
+    </div>
+</section>
+
+<!-- Embedded JSON Data (safer than complex data-* attributes) -->
+<script id="costChartData" type="application/json">{{ {'labels': cost_data.labels, 'values': cost_data.data}|tojson }}</script>
+<script id="jobTypeChartData" type="application/json">{{ {'labels': job_type_data.labels, 'values': job_type_data.data}|tojson }}</script>
+
+<!-- Pro Charts Grid -->
+<div class="chart-grid">
+    <div class="chart-card animate-fade-in">
+        <div class="chart-card-header"><i class="fas fa-chart-bar"></i><h5>ค่าใช้จ่ายในการซ่อมบำรุง (รายเดือน)</h5></div>
+        <div class="chart-body"><div class="chart-empty" id="costEmpty" hidden>ไม่มีข้อมูล</div><canvas id="costChart"></canvas><div id="costLegend" class="chart-legend-inline"></div></div>
+    </div>
+    <div class="chart-card animate-fade-in delay-1">
+        <div class="chart-card-header"><i class="fas fa-chart-pie"></i><h5>ประเภทงานซ่อม</h5></div>
+        <div class="chart-body"><div class="chart-empty" id="jobTypeEmpty" hidden>ไม่มีข้อมูล</div><canvas id="jobTypeChart"></canvas><div id="jobTypeLegend" class="chart-legend-inline"></div></div>
     </div>
 </div>
 
-<!-- Hidden Data Containers -->
-<div id="costChartDataContainer" 
-     data-labels='{{ cost_data.labels|tojson|safe }}'
-     data-values='{{ cost_data.data|tojson|safe }}'
-     class="chart-hidden">
+<!-- Pro Statistic Cards -->
+<div class="stat-grid reports-stats">
+    <div class="stat-card stat-accent-purple"><i class="fas fa-tools icon"></i><div><h3>{{ total_maintenance or 0 }}</h3><small>งานซ่อมทั้งหมด</small></div></div>
+    <div class="stat-card stat-accent-success"><i class="fas fa-check-circle icon"></i><div><h3>{{ completed_maintenance or 0 }}</h3><small>งานเสร็จสิ้น</small></div></div>
+    <div class="stat-card stat-accent-warning"><i class="fas fa-clock icon"></i><div><h3>{{ pending_maintenance or 0 }}</h3><small>รอดำเนินการ</small></div></div>
+    <div class="stat-card stat-accent-info"><i class="fas fa-dollar-sign icon"></i><div><h3>{{ total_cost or '0' }}</h3><small>ค่าใช้จ่ายรวม</small></div></div>
 </div>
 
-<div id="jobTypeChartDataContainer"
-     data-labels='{{ job_type_data.labels|tojson|safe }}'
-     data-values='{{ job_type_data.data|tojson|safe }}'
-     class="chart-hidden">
-</div>
-
-<!-- Charts Section -->
-<div class="row g-4">
-    <div class="col-lg-8 mb-4">
-        <div class="card border-0 shadow-lg animate-fade-in">
-            <div class="card-header bg-gradient text-white border-0">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    <h5 class="mb-0">ค่าใช้จ่ายในการซ่อมบำรุง (รายเดือน)</h5>
-                </div>
-            </div>
-            <div class="card-body p-4">
-                <div class="chart-container">
-                    <canvas id="costChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4 mb-4">
-        <div class="card border-0 shadow-lg animate-fade-in" style="animation-delay: 0.2s;">
-            <div class="card-header bg-gradient text-white border-0">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-chart-pie me-2"></i>
-                    <h5 class="mb-0">ประเภทงานซ่อม</h5>
-                </div>
-            </div>
-            <div class="card-body p-4">
-                <div class="chart-container">
-                    <canvas id="jobTypeChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Stats Cards -->
-<div class="row g-4 mt-2">
-    <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-md stats-card bg-gradient-primary text-white">
-            <div class="card-body text-center py-4">
-                <i class="fas fa-tools fa-2x mb-3"></i>
-                <h3 class="mb-1">{{ total_maintenance if total_maintenance else 0 }}</h3>
-                <p class="mb-0 opacity-75">งานซ่อมทั้งหมด</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-md stats-card bg-gradient-success text-white">
-            <div class="card-body text-center py-4">
-                <i class="fas fa-check-circle fa-2x mb-3"></i>
-                <h3 class="mb-1">{{ completed_maintenance if completed_maintenance else 0 }}</h3>
-                <p class="mb-0 opacity-75">งานเสร็จสิ้น</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-md stats-card bg-gradient-warning text-white">
-            <div class="card-body text-center py-4">
-                <i class="fas fa-clock fa-2x mb-3"></i>
-                <h3 class="mb-1">{{ pending_maintenance if pending_maintenance else 0 }}</h3>
-                <p class="mb-0 opacity-75">งานรอดำเนินการ</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-md stats-card bg-gradient-info text-white">
-            <div class="card-body text-center py-4">
-                <i class="fas fa-dollar-sign fa-2x mb-3"></i>
-                <h3 class="mb-1">{{ total_cost if total_cost else '0' }}</h3>
-                <p class="mb-0 opacity-75">ค่าใช้จ่ายรวม</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.chart-hidden {
-    display: none;
-}
-
-.chart-container {
-    position: relative;
-    height: 300px;
-}
-
-.stats-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stats-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-}
-
-.icon-container {
-    width: 60px;
-    height: 60px;
-    background: rgba(var(--primary-color-rgb), 0.1);
-    border-radius: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.bg-gradient-success {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-}
-
-.bg-gradient-warning {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.bg-gradient-info {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.animate-fade-in {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-</style>
+<!-- Inline style block removed; styles consolidated in main CSS -->
 
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/reports-chart.js') }}"></script>
+<script>
+// Enhance chart legends & export actions once charts are drawn
+document.addEventListener('charts:ready', function(ev){
+    const { charts } = ev.detail || {};
+    if(charts){
+        if(charts.cost){ buildLegend(charts.cost, document.getElementById('costLegend')); }
+        if(charts.jobType){ buildLegend(charts.jobType, document.getElementById('jobTypeLegend')); }
+    }
+});
+
+function buildLegend(chart, container){
+    if(!chart || !container) return;
+    container.innerHTML='';
+    const items = chart.data.datasets[0];
+    const labels = chart.data.labels;
+    if(!items) return;
+    labels.forEach((lbl, idx)=>{
+        const color = items.backgroundColor[idx] || items.borderColor || '#888';
+        const div = document.createElement('div');
+        div.className='legend-item';
+        div.innerHTML = `<span class="swatch" style="background:${color}"></span>${lbl}`;
+        container.appendChild(div);
+    });
+}
+
+// Export handlers (basic)
+document.getElementById('exportPNG')?.addEventListener('click', ()=>{
+    const canvas = document.getElementById('costChart');
+    if(canvas){
+        const link = document.createElement('a');
+        link.download='maintenance_cost_chart.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+});
+
+document.getElementById('exportCSV')?.addEventListener('click', ()=>{
+    const script = document.getElementById('costChartData');
+    if(!script) return;
+    let parsed = { labels: [], values: [] };
+    try { parsed = JSON.parse(script.textContent || '{}'); } catch(e) { console.warn('CSV export parse error', e); }
+    const labels = Array.isArray(parsed.labels) ? parsed.labels : [];
+    const values = Array.isArray(parsed.values) ? parsed.values : [];
+    let csv = 'Label,Value\n';
+    if(labels.length === 0) { csv += 'ไม่มีข้อมูล,\n'; }
+    labels.forEach((l,i)=>{ csv += `${l},${values[i] ?? ''}\n`; });
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='maintenance_costs.csv'; a.click();
+    URL.revokeObjectURL(url);
+});
+
+// Simple refresh simulation
+document.getElementById('refreshCharts')?.addEventListener('click', ()=>{
+    window.location.reload();
+});
+</script>
 {% endblock %}
